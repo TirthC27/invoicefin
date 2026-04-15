@@ -1,16 +1,48 @@
-# React + Vite
+# InvoiceFi Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is a React + Vite app configured for deployment on Vercel.
 
-Currently, two official plugins are available:
+## Local Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Production Build Check
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm run build
+```
 
-## Expanding the ESLint configuration
+## Environment Variables
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Create a local `.env` file in `frontend/` for development:
+
+```env
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_CONTRACT_ADDRESS=0xYOUR_DEPLOYED_CONTRACT_ADDRESS
+```
+
+For Vercel, add the same variables in Project Settings -> Environment Variables.
+
+## Deploy To Vercel
+
+1. Push your code to GitHub.
+2. Go to Vercel and click **Add New Project**.
+3. Import your repository.
+4. Set **Root Directory** to `invoicefin/frontend`.
+5. Vercel should auto-detect Vite. If needed, use:
+	- Build Command: `npm run build`
+	- Output Directory: `dist`
+6. Add required environment variables:
+	- `VITE_SUPABASE_URL`
+	- `VITE_SUPABASE_ANON_KEY`
+	- `VITE_CONTRACT_ADDRESS`
+7. Click **Deploy**.
+
+## Notes
+
+- This project includes a `vercel.json` rewrite so React Router routes (like `/auth`) work on refresh.
+- If `VITE_CONTRACT_ADDRESS` is missing, blockchain interactions will use the fallback zero address.
