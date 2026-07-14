@@ -84,3 +84,25 @@ class Portfolio(models.Model):
 
     class Meta:
         ordering = ['-last_updated']
+
+
+# ── Email Log ────────────────────────────────────────────
+class EmailLog(models.Model):
+    STATUS_CHOICES = [
+        ('sent', 'Sent'),
+        ('failed', 'Failed'),
+    ]
+
+    user_id = models.CharField(max_length=100, help_text="Supabase user UID")
+    transaction_hash = models.CharField(max_length=66)
+    recipient_email = models.EmailField()
+    email_type = models.CharField(max_length=50, help_text="e.g. investment_confirmation")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES)
+    provider = models.CharField(max_length=50, default='brevo')
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Email [{self.email_type}] → {self.recipient_email} ({self.status})"
+
+    class Meta:
+        ordering = ['-sent_at']
