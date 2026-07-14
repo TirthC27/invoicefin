@@ -3,17 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../src/lib/supabaseClient';
 
 const T = {
-    bg: '#0c1421',
-    bgCard: '#1b2336',
-    border: 'rgba(255,255,255,0.07)',
-    borderLight: 'rgba(255,255,255,0.1)',
-    accent: '#c7f284',
-    accentDark: '#9fc95e',
-    text: '#e2e8f0',
-    textMuted: '#64748b',
-    textDim: '#475569',
-    white: '#f8fafc',
-    inputBg: '#131a2a',
+  bg: '#0c1421',
+  bgCard: '#1b2336',
+  border: 'rgba(255,255,255,0.07)',
+  borderLight: 'rgba(255,255,255,0.1)',
+  accent: '#c7f284',
+  accentDark: '#9fc95e',
+  text: '#e2e8f0',
+  textMuted: '#64748b',
+  textDim: '#475569',
+  white: '#f8fafc',
+  inputBg: '#131a2a',
 };
 
 const AuthPage = () => {
@@ -43,7 +43,7 @@ const AuthPage = () => {
       const { data, error: signupError } = await supabase.auth.signUp({ email, password });
       if (signupError) throw signupError;
       if (data?.user) {
-        await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email, full_name: fullName, role: 'investor' }, { onConflict: 'id' }).then(() => {});
+        await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email, full_name: fullName, role: 'investor' }, { onConflict: 'id' }).then(() => { });
         if (data?.session) { navigate('/dashboard'); }
         else { setSuccessMsg('Account created! Check your email to confirm, then log in.'); setIsLogin(true); }
       }

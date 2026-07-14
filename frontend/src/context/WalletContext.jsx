@@ -8,6 +8,15 @@ export const useWallet = () => useContext(WalletContext);
 
 const LS_KEY = 'yieldx_wallet_connected';
 
+// Helper to target MetaMask explicitly in multi-wallet settings
+const getMetaMaskProvider = () => {
+  if (!window.ethereum) return null;
+  if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+    return window.ethereum.providers.find(p => p.isMetaMask) || window.ethereum;
+  }
+  return window.ethereum;
+};
+
 /* ── Provider ────────────────────────────────────────────── */
 export function WalletProvider({ children }) {
   const [walletAddress, setWalletAddress] = useState(null);
@@ -19,16 +28,17 @@ export function WalletProvider({ children }) {
 
   /* ── Switch to Polygon Amoy ──────────────────────────── */
   const switchToPolygonAmoy = useCallback(async () => {
-    if (!window.ethereum) return;
+    const providerObj = getMetaMaskProvider();
+    if (!providerObj) return;
     try {
-      await window.ethereum.request({
+      await providerObj.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: POLYGON_AMOY.chainId }],
       });
     } catch (switchError) {
       // Chain not added → add it
       if (switchError.code === 4902) {
-        await window.ethereum.request({
+        await providerObj.request({
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: POLYGON_AMOY.chainId,
@@ -46,8 +56,9 @@ export function WalletProvider({ children }) {
 
   /* ── Setup provider + signer from MetaMask ───────────── */
   const setupProviderAndSigner = useCallback(async () => {
-    if (!window.ethereum) return null;
-    const bp = new BrowserProvider(window.ethereum);
+    const providerObj = getMetaMaskProvider();
+    if (!providerObj) return null;
+    const bp = new BrowserProvider(providerObj);
     const s = await bp.getSigner();
     const network = await bp.getNetwork();
     const cid = Number(network.chainId);
@@ -61,8 +72,23 @@ export function WalletProvider({ children }) {
 
   /* ── Connect Wallet ──────────────────────────────────── */
   const connectWallet = useCallback(async () => {
-    if (!window.ethereum) {
-      alert('MetaMask not detected. Please install MetaMask.');
+    const providerObj = getMetaMaskProvider();
+    if (!providerObj) {
+      const useMock = window.confirm(
+        'MetaMask not detected.\n\nWould you like to connect a mock wallet address for previewing the local dashboard?'
+      );
+      if (useMock) {
+        const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+        setWalletAddress(mockAddress);
+        setSigner({
+          isMock: true,
+          getAddress: async () => mockAddress,
+        });
+        setConnectionStatus('connected');
+        localStorage.setItem(LS_KEY, 'true');
+        localStorage.setItem(LS_KEY + '_mock', 'true');
+        return;
+      }
       return;
     }
 
@@ -70,7 +96,7 @@ export function WalletProvider({ children }) {
 
     try {
       // Request accounts
-      const accounts = await window.ethereum.request({
+      const accounts = await providerObj.request({
         method: 'eth_requestAccounts',
       });
 
@@ -106,6 +132,7 @@ export function WalletProvider({ children }) {
       }
 
       localStorage.setItem(LS_KEY, 'true');
+      localStorage.removeItem(LS_KEY + '_mock');
     } catch (err) {
       console.error('Wallet connect error:', err);
       setConnectionStatus('disconnected');
@@ -120,11 +147,13 @@ export function WalletProvider({ children }) {
     setSigner(null);
     setConnectionStatus('disconnected');
     localStorage.removeItem(LS_KEY);
+    localStorage.removeItem(LS_KEY + '_mock');
   }, []);
 
   /* ── Event Handlers ──────────────────────────────────── */
   useEffect(() => {
-    if (!window.ethereum) return;
+    const providerObj = getMetaMaskProvider();
+    if (!providerObj) return;
 
     const handleAccountsChanged = async (accounts) => {
       if (!accounts || accounts.length === 0) {
@@ -151,14 +180,14 @@ export function WalletProvider({ children }) {
       disconnectWallet();
     };
 
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
-    window.ethereum.on('disconnect', handleDisconnect);
+    providerObj.on('accountsChanged', handleAccountsChanged);
+    providerObj.on('chainChanged', handleChainChanged);
+    providerObj.on('disconnect', handleDisconnect);
 
     return () => {
-      window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      window.ethereum.removeListener('chainChanged', handleChainChanged);
-      window.ethereum.removeListener('disconnect', handleDisconnect);
+      providerObj.removeListener('accountsChanged', handleAccountsChanged);
+      providerObj.removeListener('chainChanged', handleChainChanged);
+      providerObj.removeListener('disconnect', handleDisconnect);
     };
   }, [disconnectWallet, setupProviderAndSigner]);
 
@@ -166,24 +195,39 @@ export function WalletProvider({ children }) {
   useEffect(() => {
     if (reconnecting.current) return;
     const wasConnected = localStorage.getItem(LS_KEY);
-    if (wasConnected && window.ethereum) {
-      reconnecting.current = true;
-      window.ethereum.request({ method: 'eth_accounts' })
-        .then(async (accounts) => {
-          if (accounts && accounts.length > 0) {
-            setWalletAddress(accounts[0]);
-            const result = await setupProviderAndSigner();
-            if (result && result.chainId === POLYGON_AMOY.chainIdDecimal) {
-              setConnectionStatus('connected');
-            } else if (result) {
-              setConnectionStatus('wrong_network');
-            }
-          } else {
-            localStorage.removeItem(LS_KEY);
-          }
-        })
-        .catch(() => localStorage.removeItem(LS_KEY))
-        .finally(() => { reconnecting.current = false; });
+    const wasMock = localStorage.getItem(LS_KEY + '_mock') === 'true';
+
+    if (wasConnected) {
+      if (wasMock) {
+        const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+        setWalletAddress(mockAddress);
+        setSigner({
+          isMock: true,
+          getAddress: async () => mockAddress,
+        });
+        setConnectionStatus('connected');
+      } else {
+        const providerObj = getMetaMaskProvider();
+        if (providerObj) {
+          reconnecting.current = true;
+          providerObj.request({ method: 'eth_accounts' })
+            .then(async (accounts) => {
+              if (accounts && accounts.length > 0) {
+                setWalletAddress(accounts[0]);
+                const result = await setupProviderAndSigner();
+                if (result && result.chainId === POLYGON_AMOY.chainIdDecimal) {
+                  setConnectionStatus('connected');
+                } else if (result) {
+                  setConnectionStatus('wrong_network');
+                }
+              } else {
+                localStorage.removeItem(LS_KEY);
+              }
+            })
+            .catch(() => localStorage.removeItem(LS_KEY))
+            .finally(() => { reconnecting.current = false; });
+        }
+      }
     }
   }, [setupProviderAndSigner]);
 
