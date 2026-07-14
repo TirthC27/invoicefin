@@ -236,9 +236,11 @@ export default function Dashboard() {
     useEffect(() => { if (activeNav === 'invoices' || activeNav === 'home') loadPools(); }, [activeNav, loadPools]);
 
     /* ── Record investment ── */
-    const recordInvestment = useCallback((poolId, amount, txHash, blockNumber, interestRate) => {
+    const recordInvestment = useCallback(async (poolId, amount, txHash, blockNumber, interestRate) => {
         const expectedReturn = Number(amount) * (interestRate / 100);
         const now = new Date().toISOString();
+
+        // Instant local state update for responsive UI
         setInvestments(prev => [{ id: Date.now(), pool_id: poolId, amount: Number(amount), expected_return: expectedReturn, status: 'active', tx_hash: txHash, invested_at: now, block_number: blockNumber }, ...prev]);
         setTransactions(prev => [{ id: Date.now() + 1, pool_id: poolId, type: 'invest', amount: Number(amount), tx_hash: txHash, block_number: blockNumber, status: 'confirmed', created_at: now }, ...prev]);
         setPools(prev => prev.map(p => {
@@ -250,8 +252,32 @@ export default function Dashboard() {
             }
             return p;
         }));
-        supabase.from('investments').insert({ pool_id: poolId, amount: Number(amount), expected_return: expectedReturn, status: 'active', tx_hash: txHash }).then(() => {});
-        supabase.from('transactions').insert({ pool_id: poolId, type: 'invest', amount: Number(amount), tx_hash: txHash, status: 'confirmed' }).then(() => {});
+
+        // Send ONLY tx_hash to the backend — it verifies everything on-chain
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+            const res = await fetch(`${API_BASE}/api/investments/verify/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({ tx_hash: txHash }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                console.warn('Backend verify response:', res.status, err);
+            } else {
+                console.log('Investment verified on backend ✓');
+            }
+        } catch (err) {
+            // Backend verification failure should not break the UI
+            console.error('Backend verify call failed:', err);
+        }
     }, [selectedPool]);
 
     const handleCopy = () => {

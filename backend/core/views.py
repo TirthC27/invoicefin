@@ -1,5 +1,7 @@
 import os
 import jwt
+import logging
+import threading
 import requests
 from decimal import Decimal
 from django.utils import timezone
@@ -7,6 +9,8 @@ from rest_framework import authentication, exceptions
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+
+logger = logging.getLogger(__name__)
 
 from .models import Pool, Investment, Transaction, Portfolio
 from .serializers import (
@@ -26,17 +30,40 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
             return None
 
         token = auth_header.split(' ')[1]
-        jwt_secret = os.getenv('SUPABASE_JWT_SECRET')
-
-        if not jwt_secret:
-            raise exceptions.AuthenticationFailed('SUPABASE_JWT_SECRET not configured on backend.')
 
         try:
-            decoded = jwt.decode(
-                token, jwt_secret,
-                algorithms=["HS256"],
-                audience="authenticated"
-            )
+            # Peek at the token header to determine the algorithm
+            unverified_header = jwt.get_unverified_header(token)
+            alg = unverified_header.get('alg', 'HS256')
+
+            if alg.startswith('ES') or alg.startswith('RS') or alg.startswith('PS'):
+                # Asymmetric algorithm (ES256, RS256, etc.)
+                # Fetch the public key from Supabase JWKS endpoint
+                supabase_url = os.getenv('SUPABASE_URL', '')
+                jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+
+                from jwt import PyJWKClient
+                jwk_client = PyJWKClient(jwks_url)
+                signing_key = jwk_client.get_signing_key_from_jwt(token)
+
+                decoded = jwt.decode(
+                    token,
+                    signing_key.key,
+                    algorithms=[alg],
+                    audience="authenticated",
+                )
+            else:
+                # Symmetric algorithm (HS256, HS384, etc.)
+                jwt_secret = os.getenv('SUPABASE_JWT_SECRET')
+                if not jwt_secret:
+                    raise exceptions.AuthenticationFailed('SUPABASE_JWT_SECRET not configured.')
+
+                decoded = jwt.decode(
+                    token, jwt_secret,
+                    algorithms=["HS256", "HS384", "HS512"],
+                    audience="authenticated",
+                )
+
             user_id = decoded.get('sub')
 
             class SimpleUser:
@@ -230,6 +257,150 @@ def confirm_investment(request):
     _update_portfolio(request.user.id, investment.wallet_address)
 
     return Response(InvestmentSerializer(investment).data)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def verify_investment(request):
+    """
+    POST /api/investments/verify/
+    Secure endpoint: accepts ONLY tx_hash, verifies everything on-chain,
+    saves the investment, and triggers async confirmation email.
+    """
+    tx_hash = request.data.get('tx_hash')
+    if not tx_hash:
+        return Response({"error": "tx_hash is required"}, status=400)
+
+    # ── Reject duplicate tx_hash ─────────────────────────────────────
+    if Investment.objects.filter(tx_hash=tx_hash).exists():
+        return Response({"error": "Duplicate transaction hash"}, status=409)
+
+    # ── On-chain verification ────────────────────────────────────────
+    try:
+        from core.services.blockchain_service import verify_investment_tx
+        verified = verify_investment_tx(tx_hash)
+    except ConnectionError as e:
+        logger.error("Blockchain RPC error for tx %s: %s", tx_hash, e)
+        return Response({"error": "Blockchain RPC unavailable. Try again later."}, status=503)
+    except ValueError as e:
+        logger.warning("Verification failed for tx %s: %s", tx_hash, e)
+        return Response({"error": str(e)}, status=400)
+
+    # ── Verify wallet ownership ──────────────────────────────────────
+    # Fetch the user's registered wallet from their Supabase profile
+    user_wallet = _get_user_wallet(request.user.id)
+    if user_wallet:
+        if verified.investor.lower() != user_wallet.lower():
+            logger.warning(
+                "Wallet mismatch: tx investor=%s, user wallet=%s, user=%s",
+                verified.investor, user_wallet, request.user.id,
+            )
+            return Response(
+                {"error": "Transaction wallet does not match your registered wallet."},
+                status=403,
+            )
+
+    # ── Find the pool ────────────────────────────────────────────────
+    try:
+        pool = Pool.objects.get(contract_pool_id=verified.pool_id)
+    except Pool.DoesNotExist:
+        return Response(
+            {"error": f"Pool with contract_pool_id={verified.pool_id} not found"},
+            status=404,
+        )
+
+    # ── Save investment + transaction + update pool & portfolio ──────
+    investment = Investment.objects.create(
+        user_id=request.user.id,
+        wallet_address=verified.investor,
+        pool=pool,
+        amount=verified.amount_matic,
+        tx_hash=tx_hash,
+        status='confirmed',
+        block_number=verified.block_number,
+        confirmed_at=timezone.now(),
+    )
+
+    Transaction.objects.create(
+        user_id=request.user.id,
+        tx_hash=tx_hash,
+        tx_type='invest',
+        amount=verified.amount_matic,
+        status='confirmed',
+        pool=pool,
+    )
+
+    # Update pool remaining size
+    pool.remaining_size = max(Decimal('0'), pool.remaining_size - verified.amount_matic)
+    pool.save()
+
+    # Update portfolio
+    _update_portfolio(request.user.id, verified.investor)
+
+    # ── Trigger async email (never blocks the response) ──────────────
+    try:
+        from core.services.email_service import EmailService
+        email_service = EmailService()
+
+        expected_return = verified.amount_matic * pool.apy / Decimal('100')
+
+        email_kwargs = dict(
+            recipient_email=request.user.email,
+            user_id=request.user.id,
+            investor_name=getattr(request.user, 'full_name', None) or request.user.email,
+            pool_name=pool.name,
+            pool_id=pool.contract_pool_id,
+            amount_eth=str(verified.amount_matic),
+            apy=str(pool.apy),
+            expected_return=str(round(expected_return, 8)),
+            tx_hash=tx_hash,
+            block_number=verified.block_number,
+            invested_at=investment.confirmed_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
+        )
+
+        thread = threading.Thread(
+            target=email_service.send_investment_confirmation,
+            kwargs=email_kwargs,
+            daemon=True,
+        )
+        thread.start()
+        logger.info("Email thread started for tx %s → %s", tx_hash, request.user.email)
+
+    except Exception as e:
+        # Email failure must never break the investment
+        logger.error("Failed to start email thread for tx %s: %s", tx_hash, e)
+
+    return Response(InvestmentSerializer(investment).data, status=201)
+
+
+def _get_user_wallet(user_id):
+    """
+    Fetch the user's wallet address from their Supabase profile.
+    Returns None if profile is not accessible.
+    """
+    supabase_url = os.getenv('SUPABASE_URL')
+    service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
+
+    if not supabase_url or not service_role_key:
+        return None
+
+    try:
+        r = requests.get(
+            f"{supabase_url}/rest/v1/profiles",
+            headers={
+                "apikey": service_role_key,
+                "Authorization": f"Bearer {service_role_key}",
+                "Content-Type": "application/json",
+            },
+            params={"id": f"eq.{user_id}", "select": "wallet_address"},
+            timeout=5,
+        )
+        if r.ok and r.json():
+            return r.json()[0].get('wallet_address')
+    except Exception:
+        pass
+    return None
 
 
 @api_view(['POST'])

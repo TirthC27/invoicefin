@@ -16,6 +16,7 @@ urlpatterns = [
     path('investments/', views.list_investments, name='list_investments'),
     path('investments/initiate/', views.initiate_investment, name='initiate_investment'),
     path('investments/confirm/', views.confirm_investment, name='confirm_investment'),
+    path('investments/verify/', views.verify_investment, name='verify_investment'),
     path('investments/fail/', views.fail_investment, name='fail_investment'),
 
     # Portfolio

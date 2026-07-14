@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Pool, Investment, Transaction, Portfolio
+from .models import Pool, Investment, Transaction, Portfolio, EmailLog
 
 
 @admin.register(Pool)
@@ -43,3 +43,15 @@ class PortfolioAdmin(admin.ModelAdmin):
     def user_id_short(self, obj):
         return f"{obj.user_id[:8]}..."
     user_id_short.short_description = "User"
+
+
+@admin.register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+    list_display = ['email_type', 'recipient_email', 'status', 'provider', 'tx_hash_short', 'sent_at']
+    list_filter = ['status', 'email_type', 'provider']
+    search_fields = ['recipient_email', 'transaction_hash', 'user_id']
+    readonly_fields = ['user_id', 'transaction_hash', 'recipient_email', 'email_type', 'status', 'provider', 'sent_at']
+
+    def tx_hash_short(self, obj):
+        return f"{obj.transaction_hash[:10]}..."
+    tx_hash_short.short_description = "TX Hash"
