@@ -39,17 +39,17 @@ const IconEyeClosed = () => (
 );
 const IconArrow = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 5v14M5 12l7 7 7-7"/>
+    <path d="M12 5v14M5 12l7 7 7-7" />
   </svg>
 );
 const IconShield = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 const IconPolygon = () => (
   <svg width="14" height="14" viewBox="0 0 38 33" fill="none">
-    <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5"/>
+    <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5" />
   </svg>
 );
 
@@ -398,7 +398,7 @@ export default function Signup() {
         <nav className="lp-nav">
           <div className="lp-logo">
             <div className="lp-logo-dot" />
-            YieldX
+            Invoicefi
           </div>
           <div className="lp-nav-links">
             <a href="#" className="lp-nav-link">Documentation</a>
@@ -557,17 +557,17 @@ export default function Signup() {
 
         {/* ── FOOTER ── */}
         <footer className="lp-footer">
-          <span className="lp-footer-copy">© YieldX</span>
+          <span className="lp-footer-copy">© Invoicefi</span>
           <div className="lp-footer-center">
             <span className="lp-footer-badge">
               <IconShield /> Secure
             </span>
             <span className="lp-footer-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
               Transparent
             </span>
             <span className="lp-footer-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
               Decentralized
             </span>
           </div>

@@ -34,40 +34,40 @@ const IconEyeClosed = () => (
 );
 const IconGoogle = () => (
   <svg width="20" height="20" viewBox="0 0 24 24">
-    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
   </svg>
 );
 const IconMetaMask = () => (
   <svg width="22" height="22" viewBox="0 0 35 33" fill="none">
-    <path d="M32.958.528 19.47 10.586l2.47-5.837L32.958.528ZM2.042.528 15.406 10.68l-2.343-5.931L2.042.528ZM28.15 23.66l-3.572 5.47 7.643 2.103 2.19-7.46-6.262-.113ZM.62 23.773l2.18 7.46 7.633-2.104-3.562-5.47-6.251.114Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m10.15 14.52-2.13 3.22 7.59.345-.264-8.17-5.195 4.605ZM24.85 14.52l-5.27-4.7-.175 8.265 7.58-.345-2.135-3.22ZM10.433 29.13l4.573-2.208-3.942-3.07-.63 5.278ZM19.994 26.922l4.563 2.208-.62-5.278-3.943 3.07Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m24.557 29.13-4.563-2.208.365 2.984-.04 1.248 4.238-2.024ZM10.433 29.13l4.248 2.024-.03-1.248.355-2.984-4.573 2.208Z" fill="#D5BFB2" stroke="#D5BFB2" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m14.74 21.887-3.798-1.116 2.678-1.228 1.12 2.344ZM20.26 21.887l1.12-2.344 2.688 1.228-3.808 1.116Z" fill="#233447" stroke="#233447" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m10.433 29.13.65-5.47-4.212.114 3.562 5.356ZM23.917 23.66l.64 5.47 3.572-5.356-4.212-.114ZM27.15 17.74l-7.58.345.702 3.802 1.12-2.344 2.688 1.228 3.07-3.031ZM10.942 20.77l2.678-1.228 1.12 2.344.712-3.802-7.59-.345 3.08 3.031Z" fill="#CC6228" stroke="#CC6228" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m7.862 17.74 3.18 6.198-.102-3.168-3.078-3.03ZM24.07 20.77l-.112 3.168 3.19-6.198-3.078 3.03ZM15.452 18.085l-.712 3.802.895 4.62.203-6.085-.386-2.337ZM19.548 18.085l-.376 2.327.183 6.095.905-4.62-.712-3.802Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m20.26 21.887-.905 4.62.651.457 3.942-3.07.112-3.168-3.8 1.16ZM10.942 20.77l.102 3.168 3.942 3.07.651-.456-.895-4.62-3.8-1.162Z" fill="#F5841F" stroke="#F5841F" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m20.31 31.154.04-1.248-.335-.285h-4.03l-.315.285.03 1.248-4.247-2.024 1.485 1.218 3.01 2.083h5.134l3.02-2.083 1.475-1.218-4.267 2.024Z" fill="#C0AC9D" stroke="#C0AC9D" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m19.994 26.922-.65-.457h-3.69l-.65.457-.356 2.984.315-.285h4.03l.335.285-.334-2.984Z" fill="#161616" stroke="#161616" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M33.517 11.142 34.5 6.198l-1.542-5.67-11.964 8.879 4.603 3.895 6.506 1.9 1.444-1.686-.629-.456 1.007-.916-.772-.6 1.007-.773-.643-.505ZM.5 6.198l.993 4.944-.629.505 1.007.773-.762.6 1.007.916-.629.456 1.434 1.686 6.506-1.9 4.603-3.895L2.042.528.5 6.198Z" fill="#763E1A" stroke="#763E1A" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="m32.103 15.202-6.506-1.9 1.95 2.94-2.907 5.667 3.83-.05h5.714l-2.081-6.657ZM9.403 13.302l-6.506 1.9-2.062 6.657h5.704l3.82.05-2.897-5.667 1.941-2.94ZM19.548 18.085l.416-7.215 1.9-5.14h-8.45l1.87 5.14.446 7.215.163 2.358.01 5.826h3.69l.02-5.826.183-2.358Z" fill="#F5841F" stroke="#F5841F" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M32.958.528 19.47 10.586l2.47-5.837L32.958.528ZM2.042.528 15.406 10.68l-2.343-5.931L2.042.528ZM28.15 23.66l-3.572 5.47 7.643 2.103 2.19-7.46-6.262-.113ZM.62 23.773l2.18 7.46 7.633-2.104-3.562-5.47-6.251.114Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m10.15 14.52-2.13 3.22 7.59.345-.264-8.17-5.195 4.605ZM24.85 14.52l-5.27-4.7-.175 8.265 7.58-.345-2.135-3.22ZM10.433 29.13l4.573-2.208-3.942-3.07-.63 5.278ZM19.994 26.922l4.563 2.208-.62-5.278-3.943 3.07Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m24.557 29.13-4.563-2.208.365 2.984-.04 1.248 4.238-2.024ZM10.433 29.13l4.248 2.024-.03-1.248.355-2.984-4.573 2.208Z" fill="#D5BFB2" stroke="#D5BFB2" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m14.74 21.887-3.798-1.116 2.678-1.228 1.12 2.344ZM20.26 21.887l1.12-2.344 2.688 1.228-3.808 1.116Z" fill="#233447" stroke="#233447" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m10.433 29.13.65-5.47-4.212.114 3.562 5.356ZM23.917 23.66l.64 5.47 3.572-5.356-4.212-.114ZM27.15 17.74l-7.58.345.702 3.802 1.12-2.344 2.688 1.228 3.07-3.031ZM10.942 20.77l2.678-1.228 1.12 2.344.712-3.802-7.59-.345 3.08 3.031Z" fill="#CC6228" stroke="#CC6228" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m7.862 17.74 3.18 6.198-.102-3.168-3.078-3.03ZM24.07 20.77l-.112 3.168 3.19-6.198-3.078 3.03ZM15.452 18.085l-.712 3.802.895 4.62.203-6.085-.386-2.337ZM19.548 18.085l-.376 2.327.183 6.095.905-4.62-.712-3.802Z" fill="#E27625" stroke="#E27625" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m20.26 21.887-.905 4.62.651.457 3.942-3.07.112-3.168-3.8 1.16ZM10.942 20.77l.102 3.168 3.942 3.07.651-.456-.895-4.62-3.8-1.162Z" fill="#F5841F" stroke="#F5841F" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m20.31 31.154.04-1.248-.335-.285h-4.03l-.315.285.03 1.248-4.247-2.024 1.485 1.218 3.01 2.083h5.134l3.02-2.083 1.475-1.218-4.267 2.024Z" fill="#C0AC9D" stroke="#C0AC9D" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m19.994 26.922-.65-.457h-3.69l-.65.457-.356 2.984.315-.285h4.03l.335.285-.334-2.984Z" fill="#161616" stroke="#161616" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M33.517 11.142 34.5 6.198l-1.542-5.67-11.964 8.879 4.603 3.895 6.506 1.9 1.444-1.686-.629-.456 1.007-.916-.772-.6 1.007-.773-.643-.505ZM.5 6.198l.993 4.944-.629.505 1.007.773-.762.6 1.007.916-.629.456 1.434 1.686 6.506-1.9 4.603-3.895L2.042.528.5 6.198Z" fill="#763E1A" stroke="#763E1A" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="m32.103 15.202-6.506-1.9 1.95 2.94-2.907 5.667 3.83-.05h5.714l-2.081-6.657ZM9.403 13.302l-6.506 1.9-2.062 6.657h5.704l3.82.05-2.897-5.667 1.941-2.94ZM19.548 18.085l.416-7.215 1.9-5.14h-8.45l1.87 5.14.446 7.215.163 2.358.01 5.826h3.69l.02-5.826.183-2.358Z" fill="#F5841F" stroke="#F5841F" strokeWidth=".25" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
 const IconArrow = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 5v14M5 12l7 7 7-7"/>
+    <path d="M12 5v14M5 12l7 7 7-7" />
   </svg>
 );
 const IconShield = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 const IconPolygon = () => (
   <svg width="14" height="14" viewBox="0 0 38 33" fill="none">
-    <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5"/>
+    <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5" />
   </svg>
 );
 
@@ -445,7 +445,7 @@ export default function Login() {
         <nav className="lp-nav">
           <div className="lp-logo">
             <div className="lp-logo-dot" />
-            YieldX
+            Invoicefi
           </div>
           <div className="lp-nav-links">
             <a href="#" className="lp-nav-link">Documentation</a>
@@ -634,17 +634,17 @@ export default function Login() {
 
         {/* ── FOOTER ── */}
         <footer className="lp-footer">
-          <span className="lp-footer-copy">© YieldX</span>
+          <span className="lp-footer-copy">© Invoicefi</span>
           <div className="lp-footer-center">
             <span className="lp-footer-badge">
               <IconShield /> Secure
             </span>
             <span className="lp-footer-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
               Transparent
             </span>
             <span className="lp-footer-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4 }}><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" /></svg>
               Decentralized
             </span>
           </div>

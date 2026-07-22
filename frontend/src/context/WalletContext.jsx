@@ -6,7 +6,7 @@ import { POLYGON_AMOY } from '../lib/networkConfig';
 const WalletContext = createContext(null);
 export const useWallet = () => useContext(WalletContext);
 
-const LS_KEY = 'yieldx_wallet_connected';
+const LS_KEY = 'Invoicefi_wallet_connected';
 
 // Helper to target MetaMask explicitly in multi-wallet settings
 const getMetaMaskProvider = () => {

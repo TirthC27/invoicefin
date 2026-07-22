@@ -106,3 +106,139 @@ class EmailLog(models.Model):
 
     class Meta:
         ordering = ['-sent_at']
+
+
+# ══════════════════════════════════════════════════════════
+# MULTI-ROLE & RECOVERY MODULE
+# ══════════════════════════════════════════════════════════
+
+# ── AppUser (local mirror of Supabase auth.users) ────────
+class AppUser(models.Model):
+    ROLE_CHOICES = [
+        ('INVESTOR', 'Investor'),
+        ('EXPORTER', 'Exporter'),
+        ('LAW_FIRM', 'Law Firm'),
+        ('ADMIN', 'Admin'),
+    ]
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('SUSPENDED', 'Suspended'),
+    ]
+
+    supabase_uid = models.CharField(max_length=100, unique=True, help_text="auth.users.id from Supabase")
+    email = models.EmailField()
+    full_name = models.CharField(max_length=200, blank=True, default='')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INVESTOR')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.email} ({self.role})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+# ── Law Firm ─────────────────────────────────────────────
+class LawFirm(models.Model):
+    STATUS_CHOICES = [
+        ('ACTIVE', 'Active'),
+        ('SUSPENDED', 'Suspended'),
+    ]
+
+    user = models.OneToOneField(AppUser, on_delete=models.CASCADE, related_name='law_firm')
+    firm_name = models.CharField(max_length=300)
+    country = models.CharField(max_length=100)
+    contact_person = models.CharField(max_length=200)
+    business_email = models.EmailField()
+    website = models.URLField(blank=True, default='')
+    phone = models.CharField(max_length=30, blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.firm_name} ({self.country})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+# ── Recovery Case ────────────────────────────────────────
+class RecoveryCase(models.Model):
+    STAGE_CHOICES = [
+        ('DEFAULT', 'Default'),
+        ('LEGAL_NOTICE_SENT', 'Legal Notice Sent'),
+        ('NEGOTIATION', 'Negotiation'),
+        ('SETTLEMENT', 'Settlement'),
+        ('RECOVERED', 'Recovered'),
+        ('CLOSED', 'Closed'),
+    ]
+    PRIORITY_CHOICES = [
+        ('LOW', 'Low'),
+        ('MEDIUM', 'Medium'),
+        ('HIGH', 'High'),
+        ('CRITICAL', 'Critical'),
+    ]
+
+    pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name='recovery_cases',
+                             help_text="The invoice pool this recovery case is for")
+    law_firm = models.ForeignKey(LawFirm, null=True, blank=True, on_delete=models.SET_NULL,
+                                 related_name='recovery_cases')
+    exporter = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='recovery_cases_as_exporter')
+    investor = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='recovery_cases_as_investor')
+    outstanding_amount = models.DecimalField(max_digits=20, decimal_places=8)
+    recovery_stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='DEFAULT')
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
+    assigned_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        firm = self.law_firm.firm_name if self.law_firm else 'Unassigned'
+        return f"Recovery #{self.id} — Pool #{self.pool.contract_pool_id} → {firm} ({self.recovery_stage})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+# ── Recovery Event (timeline entries) ────────────────────
+class RecoveryEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ('LEGAL_NOTICE_SENT', 'Legal Notice Sent'),
+        ('NEGOTIATION_STARTED', 'Negotiation Started'),
+        ('SETTLEMENT_RECORDED', 'Settlement Recorded'),
+        ('PARTIAL_RECOVERY', 'Partial Recovery'),
+        ('FULL_RECOVERY', 'Full Recovery'),
+        ('CASE_CLOSED', 'Case Closed'),
+        ('DOCUMENT_UPLOADED', 'Document Uploaded'),
+        ('NOTE_ADDED', 'Note Added'),
+    ]
+
+    recovery_case = models.ForeignKey(RecoveryCase, on_delete=models.CASCADE, related_name='events')
+    event_type = models.CharField(max_length=30, choices=EVENT_TYPE_CHOICES)
+    notes = models.TextField(blank=True, default='')
+    document_url = models.URLField(blank=True, null=True)
+    created_by = models.ForeignKey(AppUser, on_delete=models.SET_NULL, null=True, related_name='created_events')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.event_type} on Case #{self.recovery_case_id} at {self.created_at}"
+
+    class Meta:
+        ordering = ['created_at']
+
+
+# ── Notification (simple in-app) ─────────────────────────
+class Notification(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    read = models.BooleanField(default=False)
+    link = models.CharField(max_length=500, blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        status = '✓' if self.read else '•'
+        return f"[{status}] {self.user.email}: {self.message[:50]}"
+
+    class Meta:
+        ordering = ['-created_at']

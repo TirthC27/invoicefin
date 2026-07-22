@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+from . import admin_views
+from . import lawfirm_views
+from . import notification_views
 
 urlpatterns = [
     # Health
@@ -24,4 +27,30 @@ urlpatterns = [
 
     # Transactions
     path('transactions/', views.list_transactions, name='list_transactions'),
+
+    # ══════════════════════════════════════════════════════
+    # ADMIN ROUTES
+    # ══════════════════════════════════════════════════════
+    path('admin/law-firms/', admin_views.list_law_firms, name='admin_list_law_firms'),
+    path('admin/law-firms/create/', admin_views.create_law_firm, name='admin_create_law_firm'),
+    path('admin/law-firms/<int:pk>/', admin_views.update_law_firm, name='admin_update_law_firm'),
+    path('admin/recovery-cases/', admin_views.list_recovery_cases, name='admin_list_recovery_cases'),
+    path('admin/recovery-cases/create/', admin_views.create_recovery_case, name='admin_create_recovery_case'),
+    path('admin/recovery-cases/<int:pk>/assign/', admin_views.assign_law_firm_to_case, name='admin_assign_law_firm'),
+    path('admin/users/', admin_views.list_users, name='admin_list_users'),
+
+    # ══════════════════════════════════════════════════════
+    # LAW FIRM ROUTES
+    # ══════════════════════════════════════════════════════
+    path('lawfirm/cases/', lawfirm_views.list_assigned_cases, name='lawfirm_list_cases'),
+    path('lawfirm/cases/<int:pk>/', lawfirm_views.get_case_detail, name='lawfirm_case_detail'),
+    path('lawfirm/cases/<int:pk>/events/', lawfirm_views.create_recovery_event, name='lawfirm_create_event'),
+    path('lawfirm/cases/<int:pk>/documents/', lawfirm_views.upload_case_document, name='lawfirm_upload_document'),
+
+    # ══════════════════════════════════════════════════════
+    # NOTIFICATIONS (any role)
+    # ══════════════════════════════════════════════════════
+    path('notifications/', notification_views.list_notifications, name='list_notifications'),
+    path('notifications/<int:pk>/read/', notification_views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/read-all/', notification_views.mark_all_notifications_read, name='mark_all_notifications_read'),
 ]
