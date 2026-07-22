@@ -14,6 +14,7 @@ urlpatterns = [
     # Pools
     path('pools/', views.list_pools, name='list_pools'),
     path('pools/create/', views.create_pool, name='create_pool'),
+    path('pools/<int:pk>/', views.get_pool_detail, name='get_pool_detail'),
 
     # Investments
     path('investments/', views.list_investments, name='list_investments'),
@@ -21,9 +22,13 @@ urlpatterns = [
     path('investments/confirm/', views.confirm_investment, name='confirm_investment'),
     path('investments/verify/', views.verify_investment, name='verify_investment'),
     path('investments/fail/', views.fail_investment, name='fail_investment'),
+    path('investment/calculate/', views.calculate_investment, name='calculate_investment'),
 
     # Portfolio
     path('portfolio/', views.get_portfolio, name='get_portfolio'),
+
+    # Investor Recovery (read-only)
+    path('investor/recovery-cases/', views.investor_recovery_cases, name='investor_recovery_cases'),
 
     # Transactions
     path('transactions/', views.list_transactions, name='list_transactions'),

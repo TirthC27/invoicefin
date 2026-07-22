@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import AdminLayout from './pages/admin/AdminLayout';
 import LawFirmLayout from './pages/lawfirm/LawFirmLayout';
 import ExporterDashboard from './pages/exporter/ExporterDashboard';
+import InvestorLayout from './pages/investor/InvestorLayout';
 
 import './index.css';
 
@@ -54,10 +55,10 @@ function App() {
         {/* ── Role redirect (backward compat) ── */}
         <Route path="/dashboard" element={<RoleRedirect />} />
 
-        {/* ── Investor (existing, unchanged) ── */}
-        <Route path="/investor/dashboard" element={
+        {/* ── Investor portal ── */}
+        <Route path="/investor/*" element={
           <ProtectedRoute allowedRoles={['INVESTOR']}>
-            <Dashboard />
+            <InvestorLayout />
           </ProtectedRoute>
         } />
 
