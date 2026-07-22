@@ -63,3 +63,12 @@ export const notificationsApi = {
   markRead: (id) => apiRequest('PATCH', `/notifications/${id}/read/`),
   markAllRead: () => apiRequest('POST', '/notifications/read-all/'),
 };
+
+// ── Investor API ────────────────────────────────────────
+export const investorApi = {
+  listPools: () => apiRequest('GET', '/pools/'),
+  getPoolDetail: (id) => apiRequest('GET', `/pools/${id}/`),
+  calculateInvestment: (data) => apiRequest('POST', '/investment/calculate/', data),
+  getPortfolio: () => apiRequest('GET', '/portfolio/'),
+  getRecoveryCases: () => apiRequest('GET', '/investor/recovery-cases/'),
+};

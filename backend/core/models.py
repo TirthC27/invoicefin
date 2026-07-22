@@ -23,6 +23,10 @@ class Investment(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('confirmed', 'Confirmed'),
+        ('active', 'Active'),
+        ('completed', 'Completed'),
+        ('overdue', 'Overdue'),
+        ('defaulted', 'Defaulted'),
         ('failed', 'Failed'),
     ]
 
@@ -35,6 +39,18 @@ class Investment(models.Model):
     block_number = models.BigIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    # ── Investor portfolio fields (computed server-side) ──
+    expected_profit = models.DecimalField(max_digits=20, decimal_places=8, default=0,
+                                          help_text="Server-computed expected profit")
+    roi = models.DecimalField(max_digits=6, decimal_places=2, default=0,
+                              help_text="ROI percentage for the pool duration")
+    transaction_fee = models.DecimalField(max_digits=20, decimal_places=8, default=0,
+                                          help_text="Platform fee taken on this investment")
+    returns_due_at = models.DateTimeField(null=True, blank=True,
+                                          help_text="When returns are expected — countdown target")
+    completed_at = models.DateTimeField(null=True, blank=True,
+                                        help_text="When this investment was completed/returned")
 
     def __str__(self):
         return f"Investment {self.tx_hash[:10]}... → Pool #{self.pool.contract_pool_id} ({self.status})"
@@ -78,6 +94,15 @@ class Portfolio(models.Model):
     active_investments = models.IntegerField(default=0)
     total_returns = models.DecimalField(max_digits=20, decimal_places=8, default=0)
     last_updated = models.DateTimeField(auto_now=True)
+
+    # ── Extended portfolio fields ──
+    current_value = models.DecimalField(max_digits=20, decimal_places=8, default=0,
+                                        help_text="Total current value of all investments")
+    total_profit = models.DecimalField(max_digits=20, decimal_places=8, default=0,
+                                       help_text="Total realised profit from completed investments")
+    completed_count = models.IntegerField(default=0)
+    pending_returns = models.DecimalField(max_digits=20, decimal_places=8, default=0,
+                                          help_text="Expected returns from active investments")
 
     def __str__(self):
         return f"Portfolio {self.user_id[:8]}... — {self.total_invested} MATIC invested"
@@ -182,6 +207,9 @@ class RecoveryCase(models.Model):
 
     pool = models.ForeignKey(Pool, on_delete=models.CASCADE, related_name='recovery_cases',
                              help_text="The invoice pool this recovery case is for")
+    investment = models.ForeignKey('Investment', null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name='recovery_cases',
+                                   help_text="The specific investment that defaulted")
     law_firm = models.ForeignKey(LawFirm, null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name='recovery_cases')
     exporter = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='recovery_cases_as_exporter')

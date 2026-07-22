@@ -3,6 +3,7 @@ import logging
 import threading
 import requests
 from decimal import Decimal
+from datetime import timedelta
 from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -11,12 +12,13 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 logger = logging.getLogger(__name__)
 
 from .authentication import SupabaseJWTAuthentication
-from .models import Pool, Investment, Transaction, Portfolio
+from .models import Pool, Investment, Transaction, Portfolio, RecoveryCase, RecoveryEvent
 from .serializers import (
-    PoolSerializer, InvestmentSerializer,
+    PoolSerializer, PoolDetailSerializer, InvestmentSerializer,
     InvestmentInitiateSerializer, InvestmentConfirmSerializer,
     TransactionSerializer, PortfolioSerializer,
 )
+from .constants import TRANSACTION_FEE_RATE
 
 
 
@@ -81,9 +83,21 @@ def get_user_me(request):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def list_pools(request):
-    """GET /api/pools/ — List all investment pools."""
+    """GET /api/pools/ — List all investment pools with enriched data."""
     pools = Pool.objects.all()
-    serializer = PoolSerializer(pools, many=True)
+    serializer = PoolDetailSerializer(pools, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_pool_detail(request, pk):
+    """GET /api/pools/<id>/ — Single pool with full detail."""
+    try:
+        pool = Pool.objects.get(pk=pk)
+    except Pool.DoesNotExist:
+        return Response({"error": "Pool not found"}, status=404)
+    serializer = PoolDetailSerializer(pool)
     return Response(serializer.data)
 
 
@@ -250,15 +264,28 @@ def verify_investment(request):
         )
 
     # ── Save investment + transaction + update pool & portfolio ──────
+    pool = Pool.objects.get(contract_pool_id=verified.pool_id)
+
+    # ── Server-side financial calculations ────────────────────────────
+    fee = verified.amount_matic * TRANSACTION_FEE_RATE
+    net_amount = verified.amount_matic - fee
+    roi_pct = (pool.apy * Decimal(str(pool.duration_days)) / Decimal('365'))
+    expected_profit = net_amount * roi_pct / Decimal('100')
+    returns_due = timezone.now() + timedelta(days=pool.duration_days)
+
     investment = Investment.objects.create(
         user_id=request.user.id,
         wallet_address=verified.investor,
         pool=pool,
         amount=verified.amount_matic,
         tx_hash=tx_hash,
-        status='confirmed',
+        status='active',
         block_number=verified.block_number,
         confirmed_at=timezone.now(),
+        expected_profit=expected_profit,
+        roi=roi_pct,
+        transaction_fee=fee,
+        returns_due_at=returns_due,
     )
 
     Transaction.objects.create(
@@ -383,25 +410,43 @@ def list_investments(request):
 
 def _update_portfolio(user_id, wallet_address=''):
     """Recalculate and cache portfolio aggregates."""
-    confirmed = Investment.objects.filter(user_id=user_id, status='confirmed')
-    total = sum(inv.amount for inv in confirmed)
-    active = confirmed.filter(pool__is_settled=False).count()
+    all_investments = Investment.objects.filter(user_id=user_id).exclude(status__in=['pending', 'failed'])
 
-    # Calculate mock returns (based on APY * duration for confirmed settled pools)
-    settled = confirmed.filter(pool__is_settled=True)
+    # Active investments
+    active = all_investments.filter(status__in=['confirmed', 'active'])
+    active_count = active.count()
+    total_invested = sum(inv.amount for inv in active)
+
+    # Completed investments
+    completed = all_investments.filter(status='completed')
+    completed_count = completed.count()
+    total_profit = sum(inv.expected_profit for inv in completed)
+
+    # Returns from settled pools (legacy logic kept for backward compat)
+    settled = all_investments.filter(pool__is_settled=True)
     returns = Decimal('0')
     for inv in settled:
         yearly_return = inv.amount * inv.pool.apy / Decimal('100')
         daily_return = yearly_return / Decimal('365')
         returns += daily_return * Decimal(str(inv.pool.duration_days))
 
+    # Pending returns = expected profit from active investments
+    pending_returns = sum(inv.expected_profit for inv in active)
+
+    # Current value = invested amounts + accrued returns from completed
+    current_value = total_invested + total_profit
+
     portfolio, _ = Portfolio.objects.update_or_create(
         user_id=user_id,
         defaults={
             'wallet_address': wallet_address,
-            'total_invested': total,
-            'active_investments': active,
+            'total_invested': total_invested + sum(inv.amount for inv in completed),
+            'active_investments': active_count,
             'total_returns': returns,
+            'current_value': current_value,
+            'total_profit': total_profit,
+            'completed_count': completed_count,
+            'pending_returns': pending_returns,
         },
     )
     return portfolio
@@ -411,22 +456,173 @@ def _update_portfolio(user_id, wallet_address=''):
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_portfolio(request):
-    """GET /api/portfolio/ — Aggregated portfolio for user."""
+    """GET /api/portfolio/ — Full portfolio: summary + investment list with recovery data."""
+    # Recompute portfolio first
+    _update_portfolio(request.user.id)
+
     try:
         portfolio = Portfolio.objects.get(user_id=request.user.id)
     except Portfolio.DoesNotExist:
-        # Return empty portfolio
-        return Response({
-            'user_id': request.user.id,
-            'wallet_address': '',
-            'total_invested': '0.00000000',
-            'active_investments': 0,
-            'total_returns': '0.00000000',
-            'last_updated': None,
+        portfolio = None
+
+    portfolio_data = PortfolioSerializer(portfolio).data if portfolio else {
+        'user_id': request.user.id,
+        'wallet_address': '',
+        'total_invested': '0.00000000',
+        'active_investments': 0,
+        'total_returns': '0.00000000',
+        'current_value': '0.00000000',
+        'total_profit': '0.00000000',
+        'completed_count': 0,
+        'pending_returns': '0.00000000',
+        'last_updated': None,
+    }
+
+    # Full investment list with recovery info
+    investments = Investment.objects.filter(
+        user_id=request.user.id
+    ).exclude(status__in=['pending', 'failed']).select_related('pool')
+
+    investment_list = []
+    for inv in investments:
+        inv_data = InvestmentSerializer(inv).data
+
+        # Join recovery case if this investment is defaulted
+        recovery_info = None
+        if inv.status in ['overdue', 'defaulted']:
+            recovery_case = RecoveryCase.objects.filter(
+                investment=inv
+            ).select_related('law_firm').first()
+            if not recovery_case:
+                # Fallback: find by pool + investor
+                from .models import AppUser
+                try:
+                    app_user = AppUser.objects.get(supabase_uid=request.user.id)
+                    recovery_case = RecoveryCase.objects.filter(
+                        pool=inv.pool, investor=app_user
+                    ).select_related('law_firm').first()
+                except AppUser.DoesNotExist:
+                    pass
+
+            if recovery_case:
+                recovery_info = {
+                    'id': recovery_case.id,
+                    'recovery_stage': recovery_case.recovery_stage,
+                    'priority': recovery_case.priority,
+                    'law_firm_name': recovery_case.law_firm.firm_name if recovery_case.law_firm else None,
+                    'assigned_date': recovery_case.assigned_date,
+                    'outstanding_amount': str(recovery_case.outstanding_amount),
+                }
+
+        inv_data['recovery'] = recovery_info
+        investment_list.append(inv_data)
+
+    return Response({
+        'portfolio': portfolio_data,
+        'investments': investment_list,
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+# INVESTMENT CALCULATOR
+# ═══════════════════════════════════════════════════════════
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def calculate_investment(request):
+    """
+    POST /api/investment/calculate/
+    Returns server-computed expected_profit, roi, transaction_fee for a given pool + amount.
+    Used by the invest modal for debounced live preview.
+    """
+    pool_id = request.data.get('pool_id')
+    amount = request.data.get('amount')
+
+    if not pool_id or not amount:
+        return Response({"error": "pool_id and amount are required"}, status=400)
+
+    try:
+        amount = Decimal(str(amount))
+    except Exception:
+        return Response({"error": "Invalid amount"}, status=400)
+
+    try:
+        pool = Pool.objects.get(pk=pool_id)
+    except Pool.DoesNotExist:
+        return Response({"error": "Pool not found"}, status=404)
+
+    if amount > pool.remaining_size:
+        return Response({"error": f"Exceeds remaining capacity ({pool.remaining_size} ETH)"}, status=400)
+
+    fee = amount * TRANSACTION_FEE_RATE
+    net_amount = amount - fee
+    roi_pct = (pool.apy * Decimal(str(pool.duration_days)) / Decimal('365'))
+    expected_profit = net_amount * roi_pct / Decimal('100')
+
+    return Response({
+        'amount': str(amount),
+        'transaction_fee': str(round(fee, 8)),
+        'net_amount': str(round(net_amount, 8)),
+        'roi': str(round(roi_pct, 2)),
+        'expected_profit': str(round(expected_profit, 8)),
+        'duration_days': pool.duration_days,
+        'apy': str(pool.apy),
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+# INVESTOR RECOVERY VIEW (read-only)
+# ═══════════════════════════════════════════════════════════
+
+@api_view(['GET'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def investor_recovery_cases(request):
+    """
+    GET /api/investor/recovery-cases/
+    Returns recovery cases for the current investor's defaulted investments.
+    Read-only view into recovery data.
+    """
+    from .models import AppUser
+    try:
+        app_user = AppUser.objects.get(supabase_uid=request.user.id)
+    except AppUser.DoesNotExist:
+        return Response([])
+
+    cases = RecoveryCase.objects.filter(
+        investor=app_user
+    ).select_related('law_firm', 'pool', 'investment').order_by('-created_at')
+
+    result = []
+    for case in cases:
+        events = RecoveryEvent.objects.filter(recovery_case=case).order_by('created_at')
+        result.append({
+            'id': case.id,
+            'pool_name': case.pool.name if case.pool else None,
+            'pool_contract_id': case.pool.contract_pool_id if case.pool else None,
+            'outstanding_amount': str(case.outstanding_amount),
+            'recovery_stage': case.recovery_stage,
+            'priority': case.priority,
+            'assigned_date': case.assigned_date,
+            'law_firm_name': case.law_firm.firm_name if case.law_firm else None,
+            'law_firm_country': case.law_firm.country if case.law_firm else None,
+            'investment_id': case.investment_id,
+            'investment_amount': str(case.investment.amount) if case.investment else None,
+            'created_at': case.created_at,
+            'events': [
+                {
+                    'id': e.id,
+                    'event_type': e.event_type,
+                    'notes': e.notes,
+                    'document_url': e.document_url,
+                    'created_at': e.created_at,
+                }
+                for e in events
+            ],
         })
 
-    serializer = PortfolioSerializer(portfolio)
-    return Response(serializer.data)
+    return Response(result)
 
 
 # ═══════════════════════════════════════════════════════════
