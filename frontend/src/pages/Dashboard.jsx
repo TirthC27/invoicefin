@@ -6,31 +6,31 @@ import { investInPool } from '../lib/contractService';
 import { POLYGON_AMOY } from '../lib/networkConfig';
 
 // Lucide icons
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  Receipt, 
-  TrendingUp, 
-  Briefcase, 
-  History, 
-  BarChart3, 
-  Settings as SettingsIcon, 
-  Bell, 
-  ChevronRight, 
-  ChevronDown,
-  LogOut, 
-  Shield, 
-  Info, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  Globe,
-  Coins,
-  Percent,
-  Users,
-  Menu,
-  X,
-  Copy,
-  Check
+import {
+    LayoutDashboard,
+    Wallet,
+    Receipt,
+    TrendingUp,
+    Briefcase,
+    History,
+    BarChart3,
+    Settings as SettingsIcon,
+    Bell,
+    ChevronRight,
+    ChevronDown,
+    LogOut,
+    Shield,
+    Info,
+    ArrowUpRight,
+    ArrowDownRight,
+    Globe,
+    Coins,
+    Percent,
+    Users,
+    Menu,
+    X,
+    Copy,
+    Check
 } from 'lucide-react';
 
 /* ── HELPERS ── */
@@ -105,33 +105,33 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(5,5,8,0.85)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }} onClick={onClose}>
             <div style={{ background: '#18181D', border: `1px solid rgba(255,255,255,0.08)`, borderRadius: 20, padding: '32px', width: 440, maxWidth: '90vw', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }} onClick={e => e.stopPropagation()}>
-                
+
                 {step === 'input' && <>
                     <h3 style={{ margin: '0 0 6px', fontSize: '1.25rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.4px' }}>Invest in {pool.company || pool.name || `Pool #${pool.id}`}</h3>
                     <p style={{ margin: '0 0 24px', fontSize: '0.85rem', color: '#A1A1AA' }}>{fmt(remaining)} ETH remaining · {interestRate}% APY</p>
-                    
+
                     <div style={{ marginBottom: 16 }}>
                         <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: '#A1A1AA', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Investment Amount (ETH)</label>
-                        <input 
-                            type="number" 
-                            step="0.001" 
-                            min="0" 
-                            max={remaining} 
-                            value={amount} 
+                        <input
+                            type="number"
+                            step="0.001"
+                            min="0"
+                            max={remaining}
+                            value={amount}
                             onChange={e => setAmount(e.target.value)}
-                            placeholder="0.00" 
-                            style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: `1px solid rgba(255,255,255,0.08)`, background: '#0B0B0F', color: '#FFFFFF', fontSize: '1.05rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }} 
+                            placeholder="0.00"
+                            style={{ width: '100%', padding: '14px 16px', borderRadius: 12, border: `1px solid rgba(255,255,255,0.08)`, background: '#0B0B0F', color: '#FFFFFF', fontSize: '1.05rem', fontWeight: 600, outline: 'none', boxSizing: 'border-box' }}
                         />
                     </div>
-                    
+
                     {error && <p style={{ color: '#EF4444', fontSize: '0.8rem', margin: '4px 0 12px', fontWeight: 500 }}>{error}</p>}
-                    
+
                     <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
                         <button onClick={onClose} style={{ flex: 1, padding: '12px', borderRadius: 12, border: `1px solid rgba(255,255,255,0.08)`, background: 'transparent', color: '#A1A1AA', fontWeight: 600, cursor: 'pointer', fontSize: '0.88rem', transition: 'all 0.2s' }}>Cancel</button>
                         <button onClick={handleInvest} style={{ flex: 2, padding: '12px', borderRadius: 12, border: 'none', background: `linear-gradient(135deg, #7C5CFC, #6B48F5)`, color: '#FFFFFF', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem', boxShadow: '0 4px 16px rgba(124,92,252,0.25)', transition: 'transform 0.2s' }}>Confirm Investment</button>
                     </div>
                 </>}
-                
+
                 {step === 'pending' && (
                     <div style={{ textAlign: 'center', padding: '30px 0' }}>
                         <div style={{ width: 44, height: 44, border: `3px solid rgba(124,92,252,0.15)`, borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
@@ -139,7 +139,7 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
                         <p style={{ color: '#A1A1AA', fontSize: '0.8rem' }}>Please confirm the transaction in your wallet extension.</p>
                     </div>
                 )}
-                
+
                 {step === 'confirming' && (
                     <div style={{ textAlign: 'center', padding: '30px 0' }}>
                         <div style={{ width: 44, height: 44, border: `3px solid rgba(124,92,252,0.15)`, borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
@@ -148,27 +148,27 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
                         <p style={{ color: '#71717A', fontSize: '0.72rem', fontFamily: 'monospace', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: 8, display: 'inline-block' }}>{short(txHash)}</p>
                     </div>
                 )}
-                
+
                 {step === 'success' && (
                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
                         <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center', justifycontent: 'center', margin: '0 auto 20px', fontSize: 24, color: '#22C55E' }}>✓</div>
                         <h3 style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '1.25rem', margin: '0 0 6px', letterSpacing: '-0.3px' }}>Investment Confirmed</h3>
                         <p style={{ color: '#A1A1AA', fontSize: '0.85rem', marginBottom: 16 }}>{amount} ETH funded successfully to Block #{blockNumber}</p>
-                        
+
                         <a href={`${POLYGON_AMOY.blockExplorerUrls[0]}tx/${txHash}`} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#7C5CFC', fontSize: '0.8rem', fontFamily: 'monospace', textDecoration: 'none', marginBottom: 24 }}>
                             View on Block Explorer →
                         </a>
-                        
+
                         <button onClick={onClose} style={{ display: 'block', width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: '#7C5CFC', color: '#FFFFFF', fontWeight: 700, cursor: 'pointer', fontSize: '0.88rem' }}>Done</button>
                     </div>
                 )}
-                
+
                 {step === 'error' && (
                     <div style={{ textAlign: 'center', padding: '20px 0' }}>
                         <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifycontent: 'center', margin: '0 auto 20px', fontSize: 24, color: '#EF4444' }}>✗</div>
                         <h3 style={{ color: '#FFFFFF', fontWeight: 800, fontSize: '1.25rem', margin: '0 0 6px', letterSpacing: '-0.3px' }}>Transaction Failed</h3>
                         <p style={{ color: '#A1A1AA', fontSize: '0.82rem', margin: '0 0 24px', lineHeight: 1.5 }}>{error}</p>
-                        
+
                         <button onClick={() => { setStep('input'); setError(''); }} style={{ padding: '10px 24px', borderRadius: 12, border: `1px solid rgba(255,255,255,0.08)`, background: 'transparent', color: '#FFFFFF', fontWeight: 600, cursor: 'pointer', fontSize: '0.85rem' }}>Try Again</button>
                     </div>
                 )}
@@ -291,7 +291,7 @@ export default function Dashboard() {
     if (loading) return (
         <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#0B0B0F]">
             <div className="w-8 h-8 border-2 border-white/10 border-t-[#7C5CFC] rounded-full animate-spin mb-3" />
-            <p className="text-[#A1A1AA] text-xs font-semibold tracking-wider uppercase">Loading YieldX…</p>
+            <p className="text-[#A1A1AA] text-xs font-semibold tracking-wider uppercase">Loading Invoicefi…</p>
         </div>
     );
 
@@ -311,7 +311,7 @@ export default function Dashboard() {
     ];
 
     const getPageTitle = () => {
-        switch(activeNav) {
+        switch (activeNav) {
             case 'home': return 'Overview';
             case 'invoices': return 'Investments & Invoices';
             case 'portfolio': return 'Portfolio Details';
@@ -324,7 +324,7 @@ export default function Dashboard() {
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-[#0B0B0F] text-white font-sans selection:bg-[#7C5CFC]/20">
-            
+
             {/* Custom Animations & Interactions Overrides */}
             <style>{`
                 .nav-btn-stripe { height: 46px; border-radius: 12px; transition: background 200ms, transform 200ms, color 200ms; }
@@ -341,14 +341,14 @@ export default function Dashboard() {
             {/* ══════════ LEFT FIXED SIDEBAR ══════════ */}
             <aside className="hidden lg:flex w-[260px] flex-col bg-[#101015] border-r border-white/8 py-6 px-4 shrink-0 justify-between">
                 <div>
-                    {/* YieldX Logo */}
+                    {/* Invoicefi Logo */}
                     <div className="flex items-center gap-3.5 px-3 mb-8 cursor-pointer" onClick={() => setActiveNav('home')}>
                         <div className="w-8.5 h-8.5 rounded-[10px] bg-gradient-to-tr from-[#7C5CFC] to-[#6B48F5] flex items-center justify-center shadow-lg shadow-[#7C5CFC]/20">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                             </svg>
                         </div>
-                        <span className="font-extrabold text-[19px] tracking-tight text-white">YieldX</span>
+                        <span className="font-extrabold text-[19px] tracking-tight text-white">Invoicefi</span>
                     </div>
 
                     {/* Centered Navigation */}
@@ -357,16 +357,15 @@ export default function Dashboard() {
                             const targetNav = item.target || item.id;
                             const isActive = activeNav === targetNav && (item.id === 'home' ? activeNav === 'home' : true);
                             const Icon = item.icon;
-                            
+
                             return (
                                 <button
                                     key={item.id}
                                     onClick={() => { setActiveNav(targetNav); setIsMobileMenuOpen(false); }}
-                                    className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${
-                                        isActive 
-                                            ? 'nav-btn-stripe-active text-white' 
+                                    className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${isActive
+                                            ? 'nav-btn-stripe-active text-white'
                                             : 'text-[#A1A1AA] hover:text-white'
-                                    }`}
+                                        }`}
                                 >
                                     <Icon className="w-4.5 h-4.5 shrink-0" />
                                     <span>{item.label}</span>
@@ -398,7 +397,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="flex items-center gap-1.5 mt-2">
                                     <svg width="12" height="12" viewBox="0 0 38 33" fill="none">
-                                        <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5"/>
+                                        <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5" />
                                     </svg>
                                     <span className="text-[10px] text-[#A1A1AA] font-extrabold tracking-wide">Polygon Mainnet</span>
                                 </div>
@@ -437,7 +436,7 @@ export default function Dashboard() {
                                     <div className="w-8 h-8 rounded-lg bg-[#7C5CFC] flex items-center justify-center">
                                         <TrendingUp className="w-4 h-4 text-white" />
                                     </div>
-                                    <span className="font-extrabold text-lg tracking-tight">YieldX</span>
+                                    <span className="font-extrabold text-lg tracking-tight">Invoicefi</span>
                                 </div>
                                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-1 rounded-lg hover:bg-white/5 cursor-pointer text-white">
                                     <X className="w-5 h-5" />
@@ -450,16 +449,15 @@ export default function Dashboard() {
                                     const targetNav = item.target || item.id;
                                     const isActive = activeNav === targetNav && (item.id === 'home' ? activeNav === 'home' : true);
                                     const Icon = item.icon;
-                                    
+
                                     return (
                                         <button
                                             key={item.id}
                                             onClick={() => { setActiveNav(targetNav); setIsMobileMenuOpen(false); }}
-                                            className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${
-                                                isActive 
-                                                    ? 'nav-btn-stripe-active text-white' 
+                                            className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${isActive
+                                                    ? 'nav-btn-stripe-active text-white'
                                                     : 'text-[#A1A1AA] hover:text-white'
-                                            }`}
+                                                }`}
                                         >
                                             <Icon className="w-4.5 h-4.5 shrink-0" />
                                             <span>{item.label}</span>
@@ -504,7 +502,7 @@ export default function Dashboard() {
 
             {/* ══════════ MAIN CONTENT ══════════ */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                
+
                 {/* ── TOP NAVIGATION (80px Height) ── */}
                 <header className="h-20 px-8 border-b border-white/8 flex items-center justify-between shrink-0 bg-[#101015]">
                     <div className="flex items-center gap-3">
@@ -548,11 +546,11 @@ export default function Dashboard() {
 
                 {/* ── SCROLL CONTENT AREA ── */}
                 <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-[#0B0B0F] max-w-7xl mx-auto w-full">
-                    
+
                     {/* ═══ TAB: HOME / OVERVIEW ═══ */}
                     {activeNav === 'home' && (
                         <div className="flex flex-col gap-6">
-                            
+
                             {/* Welcome Card (Adaptive Height, Rounded 16px) */}
                             <div className="min-h-[140px] rounded-2xl border border-white/8 py-6 px-6 md:px-8 relative overflow-hidden bg-gradient-to-r from-[#1E124A] via-[#101015] to-[#18181D] flex items-center justify-between gap-6">
                                 <div className="z-10">
@@ -606,7 +604,7 @@ export default function Dashboard() {
 
                             {/* Content Grid (Left 65%, Right 35%) */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                
+
                                 {/* Left Panel (65%) */}
                                 <div className="card-stripe p-5 lg:col-span-2 flex flex-col min-h-[280px]">
                                     <div className="flex justify-between items-center mb-6">
@@ -642,7 +640,7 @@ export default function Dashboard() {
                                                     <stop offset="100%" stopColor="#18123b" />
                                                 </linearGradient>
                                             </svg>
-                                            
+
                                             <h4 className="text-base font-bold text-white mb-1.5">No active investments found.</h4>
                                             <p className="text-xs text-[#A1A1AA] max-w-xs mb-6">Start exploring invoice pools and make your first investment.</p>
                                             <button onClick={() => setActiveNav('invoices')} className="btn-stripe-grad px-5 py-2.5 text-white font-bold text-xs cursor-pointer shadow-lg shadow-[#7C5CFC]/15">
@@ -670,7 +668,7 @@ export default function Dashboard() {
                                 {/* Right Panel (35%) */}
                                 <div className="card-stripe p-5 flex flex-col gap-4">
                                     <h3 className="text-sm font-extrabold text-white tracking-wider uppercase">Quick Actions</h3>
-                                    
+
                                     <div className="flex flex-col gap-3">
                                         {[
                                             { title: 'Browse Invoice Pools', desc: 'Explore and buy trade finance invoices', icon: Coins, target: 'invoices', bg: 'bg-[#7C5CFC]/10', text: 'text-[#7C5CFC]' },
@@ -707,7 +705,7 @@ export default function Dashboard() {
                     {/* ═══ TAB: INVOICES / MARKETPLACE ═══ */}
                     {activeNav === 'invoices' && (
                         <div className="flex flex-col lg:flex-row gap-6 lg:h-[calc(100vh-140px)] min-h-0">
-                            
+
                             {/* Left Column: List */}
                             <div className="card-stripe w-full lg:w-80 flex flex-col shrink-0 overflow-hidden">
                                 <div className="p-4 bg-[#101015] border-b border-white/6 flex items-center justify-between">
@@ -725,16 +723,15 @@ export default function Dashboard() {
                                         const sc = STATUS_COLORS[pool.status] || STATUS_COLORS.open;
                                         const pctFunded = pool.invoice_amount > 0 ? ((pool.funded_amount || 0) / pool.invoice_amount * 100) : 0;
                                         const active = selectedPool?.id === pool.id;
-                                        
+
                                         return (
-                                            <div 
-                                                key={pool.id} 
+                                            <div
+                                                key={pool.id}
                                                 onClick={() => setSelectedPool(pool)}
-                                                className={`p-3.5 rounded-xl cursor-pointer border transition-all duration-200 ${
-                                                    active 
-                                                        ? 'bg-[#7C5CFC]/5 border-[#7C5CFC]/30 shadow-md' 
+                                                className={`p-3.5 rounded-xl cursor-pointer border transition-all duration-200 ${active
+                                                        ? 'bg-[#7C5CFC]/5 border-[#7C5CFC]/30 shadow-md'
                                                         : 'bg-white/[0.01] border-white/4 hover:bg-white/[0.03] hover:border-white/8'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex justify-between items-center mb-3">
                                                     <div className="flex items-center gap-2">
@@ -746,13 +743,13 @@ export default function Dashboard() {
                                                     </div>
                                                     <span className="px-2 py-0.5 rounded-md text-[8px] font-bold tracking-wider uppercase border" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>{pool.status}</span>
                                                 </div>
-                                                
+
                                                 <p className="text-sm font-extrabold text-white">{fmt(pool.invoice_amount)} ETH</p>
-                                                
+
                                                 <div className="h-1.5 bg-white/5 rounded-full mt-2.5 overflow-hidden">
                                                     <div className="h-full bg-[#7C5CFC] rounded-full" style={{ width: `${Math.min(pctFunded, 100)}%` }} />
                                                 </div>
-                                                
+
                                                 <div className="flex justify-between mt-1.5 text-[9px] text-[#A1A1AA] font-bold">
                                                     <span>{fmt(pctFunded, 1)}% funded</span>
                                                     <span className="text-[#7C5CFC]">{pool.interest_rate}% APY</span>
@@ -775,12 +772,12 @@ export default function Dashboard() {
                                                 <p className="text-xs text-[#A1A1AA] font-semibold mt-0.5">{selectedPool.invoiceNo || `INV-${selectedPool.id}`} · {fmt(selectedPool.invoice_amount)} ETH · {selectedPool.interest_rate}% APY</p>
                                             </div>
                                         </div>
-                                        {(() => { 
-                                            const sc = STATUS_COLORS[selectedPool.status] || STATUS_COLORS.open; 
-                                            return <span className="px-3 py-1 rounded-md text-xs font-bold border uppercase tracking-wider" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>{selectedPool.status}</span>; 
+                                        {(() => {
+                                            const sc = STATUS_COLORS[selectedPool.status] || STATUS_COLORS.open;
+                                            return <span className="px-3 py-1 rounded-md text-xs font-bold border uppercase tracking-wider" style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}>{selectedPool.status}</span>;
                                         })()}
                                     </div>
-                                    
+
                                     {/* Scroll content */}
                                     <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-6">
                                         {selectedPool.description && (
@@ -788,7 +785,7 @@ export default function Dashboard() {
                                                 <p className="text-xs text-[#A1A1AA] leading-relaxed font-medium">{selectedPool.description}</p>
                                             </div>
                                         )}
-                                        
+
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {[
                                                 { label: 'Invoice Size', value: `${fmt(selectedPool.invoice_amount)} ETH`, color: '#FFFFFF', bg: 'rgba(255,255,255,0.02)' },
@@ -802,7 +799,7 @@ export default function Dashboard() {
                                                 </div>
                                             ))}
                                         </div>
-                                        
+
                                         <div className="p-4 rounded-xl border border-white/6 bg-white/[0.01]">
                                             <div className="flex justify-between text-xs font-bold mb-2">
                                                 <span className="text-white">Funding Progress</span>
@@ -816,7 +813,7 @@ export default function Dashboard() {
                                                 <span>{fmt(Number(selectedPool.invoice_amount) - Number(selectedPool.funded_amount || 0))} ETH remaining</span>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="p-4 rounded-xl border border-white/6 bg-white/[0.01]">
                                             <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-3">Invoice Specifications</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2">
@@ -835,7 +832,7 @@ export default function Dashboard() {
                                                 ))}
                                             </div>
                                         </div>
-                                        
+
                                         {(selectedPool.status === 'open' || selectedPool.status === 'partially_funded') ? (
                                             !wallet.isConnected ? (
                                                 <button onClick={wallet.connectWallet} className="btn-stripe-outline w-full py-3.5 text-white font-bold text-sm cursor-pointer flex items-center justify-center gap-2">
@@ -966,7 +963,7 @@ export default function Dashboard() {
                         <div className="card-stripe p-6">
                             <h3 className="text-sm font-extrabold text-white tracking-wider uppercase mb-4">Analytics Overview</h3>
                             <p className="text-xs text-[#A1A1AA] leading-relaxed mb-6">Visual representation of your global export finance margins.</p>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="p-4 rounded-xl border border-white/6 bg-white/[0.01]">
                                     <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-2">Yield Analytics</h4>
@@ -974,12 +971,12 @@ export default function Dashboard() {
                                         {[45, 62, 55, 78, 90, 85, 95].map((h, i) => (
                                             <div key={i} className="flex-1 flex flex-col items-center">
                                                 <div className="w-full bg-[#7C5CFC]/80 rounded-t-md hover:bg-[#9278FF] transition-colors" style={{ height: `${h}%` }} />
-                                                <span className="text-[9px] text-[#71717A] font-bold mt-2">Pool #{i+1}</span>
+                                                <span className="text-[9px] text-[#71717A] font-bold mt-2">Pool #{i + 1}</span>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-                                
+
                                 <div className="p-4 rounded-xl border border-white/6 bg-white/[0.01] flex flex-col justify-between">
                                     <div>
                                         <h4 className="text-xs font-bold text-white uppercase tracking-wider mb-4">Historical Yield Data</h4>
@@ -998,13 +995,13 @@ export default function Dashboard() {
                     {activeNav === 'settings' && (
                         <div className="card-stripe p-6 max-w-xl">
                             <h3 className="text-sm font-extrabold text-white tracking-wider uppercase mb-6">User Profiles & Settings</h3>
-                            
+
                             <div className="flex flex-col gap-5">
                                 <div>
                                     <label className="text-[10px] font-extrabold text-[#A1A1AA] uppercase tracking-wider block mb-2">Connected Username</label>
-                                    <input type="text" readOnly value={user?.email || 'investor@yieldx.io'} className="w-full p-3.5 rounded-xl border border-white/8 bg-white/2 text-white font-semibold text-xs outline-none" />
+                                    <input type="text" readOnly value={user?.email || 'investor@Invoicefi.io'} className="w-full p-3.5 rounded-xl border border-white/8 bg-white/2 text-white font-semibold text-xs outline-none" />
                                 </div>
-                                
+
                                 <div>
                                     <label className="text-[10px] font-extrabold text-[#A1A1AA] uppercase tracking-wider block mb-2">Identity UUID</label>
                                     <input type="text" readOnly value={user?.id || 'mock-uuid'} className="w-full p-3.5 rounded-xl border border-white/8 bg-white/2 text-white font-mono text-[9px] outline-none" />

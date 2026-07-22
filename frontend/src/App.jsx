@@ -1,18 +1,86 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth, ProtectedRoute } from './context/AuthContext';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+
+// New role-based pages
+import AdminLayout from './pages/admin/AdminLayout';
+import LawFirmLayout from './pages/lawfirm/LawFirmLayout';
+import ExporterDashboard from './pages/exporter/ExporterDashboard';
+
 import './index.css';
+
+/**
+ * RoleRedirect — reads user role and redirects to the correct dashboard.
+ * This preserves backward compatibility: existing /dashboard URLs still work.
+ */
+function RoleRedirect() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        minHeight: '100vh', background: '#0B0B0F', color: '#A0A0A8',
+      }}>
+        <p>Redirecting...</p>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  switch (user.role) {
+    case 'ADMIN': return <Navigate to="/admin/dashboard" replace />;
+    case 'LAW_FIRM': return <Navigate to="/lawfirm/dashboard" replace />;
+    case 'EXPORTER': return <Navigate to="/exporter/dashboard" replace />;
+    case 'INVESTOR':
+    default:
+      return <Navigate to="/investor/dashboard" replace />;
+  }
+}
 
 function App() {
   return (
     <Router>
       <Routes>
+        {/* ── Public routes ── */}
         <Route path="/" element={<Login />} />
         <Route path="/auth" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* ── Role redirect (backward compat) ── */}
+        <Route path="/dashboard" element={<RoleRedirect />} />
+
+        {/* ── Investor (existing, unchanged) ── */}
+        <Route path="/investor/dashboard" element={
+          <ProtectedRoute allowedRoles={['INVESTOR']}>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Admin portal ── */}
+        <Route path="/admin/*" element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <AdminLayout />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Law Firm portal ── */}
+        <Route path="/lawfirm/*" element={
+          <ProtectedRoute allowedRoles={['LAW_FIRM']}>
+            <LawFirmLayout />
+          </ProtectedRoute>
+        } />
+
+        {/* ── Exporter portal (stub) ── */}
+        <Route path="/exporter/dashboard" element={
+          <ProtectedRoute allowedRoles={['EXPORTER']}>
+            <ExporterDashboard />
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
   );

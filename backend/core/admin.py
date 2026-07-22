@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Pool, Investment, Transaction, Portfolio, EmailLog
+from .models import (
+    Pool, Investment, Transaction, Portfolio, EmailLog,
+    AppUser, LawFirm, RecoveryCase, RecoveryEvent, Notification,
+)
 
 
 @admin.register(Pool)
@@ -55,3 +58,51 @@ class EmailLogAdmin(admin.ModelAdmin):
     def tx_hash_short(self, obj):
         return f"{obj.transaction_hash[:10]}..."
     tx_hash_short.short_description = "TX Hash"
+
+
+# ══════════════════════════════════════════════════════════
+# MULTI-ROLE & RECOVERY MODULE
+# ══════════════════════════════════════════════════════════
+
+@admin.register(AppUser)
+class AppUserAdmin(admin.ModelAdmin):
+    list_display = ['email', 'role', 'status', 'supabase_uid_short', 'created_at']
+    list_filter = ['role', 'status']
+    search_fields = ['email', 'full_name', 'supabase_uid']
+
+    def supabase_uid_short(self, obj):
+        return f"{obj.supabase_uid[:8]}..."
+    supabase_uid_short.short_description = "Supabase UID"
+
+
+@admin.register(LawFirm)
+class LawFirmAdmin(admin.ModelAdmin):
+    list_display = ['firm_name', 'country', 'contact_person', 'business_email', 'status', 'created_at']
+    list_filter = ['status', 'country']
+    search_fields = ['firm_name', 'contact_person', 'business_email']
+
+
+@admin.register(RecoveryCase)
+class RecoveryCaseAdmin(admin.ModelAdmin):
+    list_display = ['id', 'pool', 'law_firm', 'recovery_stage', 'priority', 'outstanding_amount', 'assigned_date', 'created_at']
+    list_filter = ['recovery_stage', 'priority']
+    search_fields = ['pool__name']
+
+
+@admin.register(RecoveryEvent)
+class RecoveryEventAdmin(admin.ModelAdmin):
+    list_display = ['id', 'recovery_case', 'event_type', 'created_by', 'created_at']
+    list_filter = ['event_type']
+    search_fields = ['notes']
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ['user', 'message_short', 'read', 'created_at']
+    list_filter = ['read']
+    search_fields = ['message', 'user__email']
+
+    def message_short(self, obj):
+        return obj.message[:60] + ('...' if len(obj.message) > 60 else '')
+    message_short.short_description = "Message"
+

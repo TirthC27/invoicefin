@@ -1,17 +1,16 @@
 import os
-import jwt
 import logging
 import threading
 import requests
 from decimal import Decimal
 from django.utils import timezone
-from rest_framework import authentication, exceptions
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 logger = logging.getLogger(__name__)
 
+from .authentication import SupabaseJWTAuthentication
 from .models import Pool, Investment, Transaction, Portfolio
 from .serializers import (
     PoolSerializer, InvestmentSerializer,
@@ -20,68 +19,6 @@ from .serializers import (
 )
 
 
-# -----------------------------------------------
-# Supabase JWT Authentication class
-# -----------------------------------------------
-class SupabaseJWTAuthentication(authentication.BaseAuthentication):
-    def authenticate(self, request):
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return None
-
-        token = auth_header.split(' ')[1]
-
-        try:
-            # Peek at the token header to determine the algorithm
-            unverified_header = jwt.get_unverified_header(token)
-            alg = unverified_header.get('alg', 'HS256')
-
-            if alg.startswith('ES') or alg.startswith('RS') or alg.startswith('PS'):
-                # Asymmetric algorithm (ES256, RS256, etc.)
-                # Fetch the public key from Supabase JWKS endpoint
-                supabase_url = os.getenv('SUPABASE_URL', '')
-                jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
-
-                from jwt import PyJWKClient
-                jwk_client = PyJWKClient(jwks_url)
-                signing_key = jwk_client.get_signing_key_from_jwt(token)
-
-                decoded = jwt.decode(
-                    token,
-                    signing_key.key,
-                    algorithms=[alg],
-                    audience="authenticated",
-                )
-            else:
-                # Symmetric algorithm (HS256, HS384, etc.)
-                jwt_secret = os.getenv('SUPABASE_JWT_SECRET')
-                if not jwt_secret:
-                    raise exceptions.AuthenticationFailed('SUPABASE_JWT_SECRET not configured.')
-
-                decoded = jwt.decode(
-                    token, jwt_secret,
-                    algorithms=["HS256", "HS384", "HS512"],
-                    audience="authenticated",
-                )
-
-            user_id = decoded.get('sub')
-
-            class SimpleUser:
-                def __init__(self, uid, email, role):
-                    self.id = uid
-                    self.email = email
-                    self.role = role
-                    self.is_authenticated = True
-
-            user = SimpleUser(user_id, decoded.get('email'), decoded.get('role', 'investor'))
-            return (user, token)
-
-        except jwt.ExpiredSignatureError:
-            raise exceptions.AuthenticationFailed('Token has expired.')
-        except jwt.DecodeError:
-            raise exceptions.AuthenticationFailed('Invalid token.')
-        except Exception as e:
-            raise exceptions.AuthenticationFailed(f'Authentication failed: {str(e)}')
 
 
 # -----------------------------------------------
@@ -102,7 +39,8 @@ def health_check(request):
 def get_user_me(request):
     """
     Returns user data decoded from the Supabase JWT.
-    Optionally fetches the profile from Supabase Data API.
+    Includes role/status from local AppUser if exists,
+    and optionally fetches the profile from Supabase Data API.
     """
     supabase_url = os.getenv('SUPABASE_URL')
     service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
@@ -129,8 +67,9 @@ def get_user_me(request):
     return Response({
         "id": request.user.id,
         "email": request.user.email,
-        "role": profile.get('role', request.user.role) if profile else request.user.role,
-        "full_name": profile.get('full_name') if profile else None,
+        "role": request.user.role,
+        "status": getattr(request.user, 'status', 'ACTIVE'),
+        "full_name": profile.get('full_name') if profile else getattr(request.user, 'full_name', None),
         "wallet_address": profile.get('wallet_address') if profile else None,
     })
 

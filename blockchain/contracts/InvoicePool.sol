@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /**
  * @title InvoicePool
- * @notice YieldX invoice financing pools on Polygon Amoy.
+ * @notice Invoicefi invoice financing pools on Polygon Amoy.
  *         Exporters create pools backed by invoices; investors fund them for yield.
  */
 contract InvoicePool is ReentrancyGuard {

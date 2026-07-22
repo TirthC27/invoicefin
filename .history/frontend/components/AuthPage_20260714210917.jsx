@@ -4,17 +4,17 @@ import { supabase } from '../src/lib/supabaseClient';
 
 /* ── HELPERS & THEME ── */
 const T = {
-    bg: '#0B0B0F',
-    bgCard: '#151518',
-    border: 'rgba(255,255,255,0.08)',
-    borderLight: 'rgba(255,255,255,0.12)',
-    accent: '#7C5CFC',
-    accentDark: '#6B48F5',
-    text: '#FFFFFF',
-    textMuted: '#A1A1AA',
-    textDim: '#71717A',
-    white: '#FFFFFF',
-    inputBg: 'rgba(255,255,255,0.03)',
+  bg: '#0B0B0F',
+  bgCard: '#151518',
+  border: 'rgba(255,255,255,0.08)',
+  borderLight: 'rgba(255,255,255,0.12)',
+  accent: '#7C5CFC',
+  accentDark: '#6B48F5',
+  text: '#FFFFFF',
+  textMuted: '#A1A1AA',
+  textDim: '#71717A',
+  white: '#FFFFFF',
+  inputBg: 'rgba(255,255,255,0.03)',
 };
 
 /* ── SVG ICONS ── */
@@ -122,7 +122,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
-  
+
   const [showPassword, setShowPassword] = useState(false);
 
   const resetMessages = () => { setError(null); setSuccessMsg(null); };
@@ -143,7 +143,7 @@ const AuthPage = () => {
       const { data, error: signupError } = await supabase.auth.signUp({ email, password });
       if (signupError) throw signupError;
       if (data?.user) {
-        await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email, full_name: fullName, role: 'investor' }, { onConflict: 'id' }).then(() => {});
+        await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email, full_name: fullName, role: 'investor' }, { onConflict: 'id' }).then(() => { });
         if (data?.session) { navigate('/dashboard'); }
         else { setSuccessMsg('Account created! Check your email to confirm, then log in.'); setIsLogin(true); }
       }
@@ -158,23 +158,23 @@ const AuthPage = () => {
   };
 
   const inputStyle = {
-    width: '100%', 
+    width: '100%',
     height: '46px',
-    padding: '0 40px', 
+    padding: '0 40px',
     borderRadius: 10,
-    border: `1px solid rgba(255,255,255,0.1)`, 
+    border: `1px solid rgba(255,255,255,0.1)`,
     background: T.inputBg,
-    color: T.white, 
-    fontSize: '0.9rem', 
+    color: T.white,
+    fontSize: '0.9rem',
     outline: 'none',
-    boxSizing: 'border-box', 
+    boxSizing: 'border-box',
     fontFamily: 'inherit',
     transition: 'border-color 0.2s, box-shadow 0.2s',
   };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: T.bg, fontFamily: "'Inter', system-ui, sans-serif", color: T.text, boxSizing: 'border-box' }}>
-      
+
       {/* Scope visual focus colors */}
       <style>{`
         .auth-input:focus { border-color: ${T.accent} !important; box-shadow: 0 0 0 3px rgba(124,92,252,0.12) !important; }
@@ -199,7 +199,7 @@ const AuthPage = () => {
             <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${T.accent}, ${T.accentDark})`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 16px rgba(124,92,252,0.25)` }}>
               <svg width="18" height="18" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
             </div>
-            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: T.white, letterSpacing: '-0.4px' }}>YieldX</span>
+            <span style={{ fontSize: '1.35rem', fontWeight: 800, color: T.white, letterSpacing: '-0.4px' }}>Invoicefi</span>
           </div>
           <h1 style={{ fontSize: 'clamp(2rem, 3.8vw, 2.8rem)', fontWeight: 800, color: T.white, lineHeight: 1.15, letterSpacing: '-1.5px', marginBottom: 18 }}>
             Access global <span style={{ color: T.accent }}>liquidity</span> instantly
@@ -239,7 +239,7 @@ const AuthPage = () => {
 
           {/* Form */}
           <form onSubmit={isLogin ? handleLogin : handleRegister} style={{ display: 'flex', flexDirection: 'column' }}>
-            
+
             {!isLogin && (
               <div>
                 <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Full Name</label>
@@ -249,7 +249,7 @@ const AuthPage = () => {
                 </div>
               </div>
             )}
-            
+
             <div>
               <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Email Address</label>
               <div style={inputWrapStyle}>
@@ -257,7 +257,7 @@ const AuthPage = () => {
                 <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" className="auth-input" style={inputStyle} />
               </div>
             </div>
-            
+
             <div>
               <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 600, color: T.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Password</label>
               <div style={inputWrapStyle}>
@@ -272,14 +272,14 @@ const AuthPage = () => {
                 </button>
               </div>
             </div>
-            
+
             <button type="submit" disabled={loading} className="auth-btn-p" style={{ marginTop: 8, width: '100%', height: '46px', borderRadius: 10, border: 'none', background: `linear-gradient(135deg, ${T.accent}, ${T.accentDark})`, color: T.white, fontWeight: 700, fontSize: '0.9rem', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: `0 4px 16px rgba(124,92,252,0.25)`, opacity: loading ? 0.75 : 1, transition: 'all 0.2s', fontFamily: 'inherit' }}>
               {loading ? (isLogin ? 'Signing in...' : 'Creating account...') : (isLogin ? 'Sign In' : 'Create Account')}
             </button>
           </form>
 
           <p style={{ marginTop: 24, textAlign: 'center', fontSize: '0.72rem', color: T.textDim, lineHeight: 1.4 }}>
-            By continuing, you agree to YieldX's Terms of Service and Privacy Policy.
+            By continuing, you agree to Invoicefi's Terms of Service and Privacy Policy.
           </p>
         </div>
       </div>
