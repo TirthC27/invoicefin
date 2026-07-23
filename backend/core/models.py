@@ -270,3 +270,126 @@ class Notification(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+# ══════════════════════════════════════════════════════════
+# EXPORTER INVOICE LIFECYCLE
+# ══════════════════════════════════════════════════════════
+
+# ── Invoice ──────────────────────────────────────────────
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('Draft',     'Draft'),
+        ('Verified',  'Verified'),
+        ('Funding',   'Funding'),
+        ('Funded',    'Funded'),
+        ('Active',    'Active'),
+        ('Completed', 'Completed'),
+    ]
+    CURRENCY_CHOICES = [
+        ('USD', 'US Dollar'), ('EUR', 'Euro'), ('GBP', 'British Pound'),
+        ('INR', 'Indian Rupee'), ('AED', 'UAE Dirham'),
+        ('SGD', 'Singapore Dollar'), ('JPY', 'Japanese Yen'), ('CNY', 'Chinese Yuan'),
+    ]
+
+    exporter      = models.ForeignKey(
+        AppUser, on_delete=models.CASCADE, related_name='invoices',
+        null=True, blank=True,
+        help_text="AppUser with EXPORTER role who uploaded this invoice",
+    )
+    invoice_number = models.CharField(max_length=100, unique=True)
+    buyer_name     = models.CharField(max_length=200)
+    buyer_company  = models.CharField(max_length=300)
+    amount         = models.DecimalField(max_digits=20, decimal_places=2)
+    currency       = models.CharField(max_length=5, choices=CURRENCY_CHOICES, default='USD')
+    issue_date     = models.DateField()
+    due_date       = models.DateField()
+    po_number      = models.CharField(max_length=100, blank=True, default='')
+    country        = models.CharField(max_length=100, default='United States')
+    description    = models.TextField(blank=True, default='')
+    pdf_url        = models.URLField(blank=True, default='')
+    status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Verified')
+    funded_amount  = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    blockchain_hash = models.CharField(max_length=70, blank=True, default='')
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.invoice_number} — {self.buyer_company} ({self.status})"
+
+    @property
+    def funding_percent(self):
+        if self.amount and self.amount > 0:
+            return round(float(self.funded_amount / self.amount) * 100, 1)
+        return 0.0
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['due_date']),
+            models.Index(fields=['invoice_number']),
+        ]
+
+
+# ── Invoice Pool ─────────────────────────────────────────
+class InvoicePool(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('fully_funded', 'Fully Funded'),
+        ('closed', 'Closed'),
+    ]
+
+    invoice          = models.OneToOneField(
+        Invoice, on_delete=models.CASCADE, related_name='pool',
+    )
+    pool_size        = models.DecimalField(max_digits=20, decimal_places=2)
+    expected_roi     = models.DecimalField(max_digits=6, decimal_places=2,
+                                           help_text="Expected ROI percentage, e.g. 12.50")
+    funding_deadline = models.DateField(help_text="Must be before invoice due date")
+    min_investment   = models.DecimalField(max_digits=20, decimal_places=2)
+    max_investment   = models.DecimalField(max_digits=20, decimal_places=2)
+    amount_funded    = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+    is_visible_to_investors = models.BooleanField(default=True,
+        help_text="When True, investors can see and invest in this pool")
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_at       = models.DateTimeField(auto_now_add=True)
+    updated_at       = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Pool for {self.invoice.invoice_number} ({self.status})"
+
+    @property
+    def percent_funded(self):
+        if self.pool_size and self.pool_size > 0:
+            return round(float(self.amount_funded / self.pool_size) * 100, 1)
+        return 0.0
+
+    class Meta:
+        ordering = ['-created_at']
+
+
+# ── Upload History (activity log) ────────────────────────
+class UploadHistory(models.Model):
+    ACTION_CHOICES = [
+        ('uploaded',     'Uploaded'),
+        ('verified',     'Verified'),
+        ('pool_created', 'Pool Created'),
+        ('funded',       'Funded'),
+        ('matured',      'Matured'),
+        ('status_changed', 'Status Changed'),
+    ]
+
+    invoice     = models.ForeignKey(Invoice, on_delete=models.CASCADE,
+                                    related_name='history')
+    pool        = models.ForeignKey(InvoicePool, on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name='history')
+    action_type = models.CharField(max_length=30, choices=ACTION_CHOICES)
+    description = models.TextField()
+    timestamp   = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"[{self.action_type}] {self.invoice.invoice_number} @ {self.timestamp}"
+
+    class Meta:
+        ordering = ['-timestamp']

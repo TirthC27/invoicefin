@@ -64,11 +64,31 @@ export const notificationsApi = {
   markAllRead: () => apiRequest('POST', '/notifications/read-all/'),
 };
 
-// ── Investor API ────────────────────────────────────────
-export const investorApi = {
+// ── Investor API ──────────────────────────────────────────
+const investorApi = {
   listPools: () => apiRequest('GET', '/pools/'),
   getPoolDetail: (id) => apiRequest('GET', `/pools/${id}/`),
   calculateInvestment: (data) => apiRequest('POST', '/investment/calculate/', data),
   getPortfolio: () => apiRequest('GET', '/portfolio/'),
   getRecoveryCases: () => apiRequest('GET', '/investor/recovery-cases/'),
+};
+export { investorApi };
+
+// ── Exporter API ──────────────────────────────────────────
+export const exporterApi = {
+  // Invoice CRUD
+  uploadInvoice:  (data)          => apiRequest('POST', '/exporter/invoices/', data),
+  listInvoices:   (params = {})   => apiRequest('GET',
+    '/exporter/invoices/list/?' + new URLSearchParams(params).toString()),
+  getInvoice:     (id)            => apiRequest('GET',  `/exporter/invoices/${id}/`),
+
+  // Pool
+  createPool:     (id, data)      => apiRequest('POST',  `/exporter/invoices/${id}/pool/`, data),
+
+  // Status transitions
+  updateStatus:   (id, status)    => apiRequest('PATCH', `/exporter/invoices/${id}/status/`, { status }),
+  matureInvoice:  (id)            => apiRequest('PATCH', `/exporter/invoices/${id}/mature/`),
+
+  // Activities
+  getActivities:  ()              => apiRequest('GET', '/exporter/activities/'),
 };

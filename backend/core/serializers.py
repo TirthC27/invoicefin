@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Pool, Investment, Transaction, Portfolio
+from .models import Pool, Investment, Transaction, Portfolio, Invoice, InvoicePool, UploadHistory
 
 
 class PoolSerializer(serializers.ModelSerializer):
@@ -117,3 +117,43 @@ class PortfolioSerializer(serializers.ModelSerializer):
             'pending_returns', 'last_updated',
         ]
         read_only_fields = ['id', 'last_updated']
+
+
+# ── Exporter Invoice Lifecycle ───────────────────────────────
+class InvoicePoolSerializer(serializers.ModelSerializer):
+    percent_funded = serializers.FloatField(source='percent_funded', read_only=True)
+
+    class Meta:
+        model = InvoicePool
+        fields = [
+            'id', 'pool_size', 'expected_roi', 'funding_deadline',
+            'min_investment', 'max_investment', 'amount_funded',
+            'is_visible_to_investors', 'status', 'percent_funded',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    pool = InvoicePoolSerializer(read_only=True)
+    funding_percent = serializers.FloatField(read_only=True)
+    exporter_email  = serializers.EmailField(source='exporter.email', read_only=True, default=None)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'invoice_number', 'buyer_name', 'buyer_company',
+            'amount', 'currency', 'issue_date', 'due_date',
+            'po_number', 'country', 'description', 'pdf_url',
+            'status', 'funded_amount', 'funding_percent',
+            'blockchain_hash', 'pool', 'exporter_email',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'funding_percent']
+
+
+class UploadHistorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UploadHistory
+        fields = ['id', 'action_type', 'description', 'timestamp']
+        read_only_fields = ['id', 'timestamp']

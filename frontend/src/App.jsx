@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 // New role-based pages
 import AdminLayout from './pages/admin/AdminLayout';
 import LawFirmLayout from './pages/lawfirm/LawFirmLayout';
-import ExporterDashboard from './pages/exporter/ExporterDashboard';
+import ExporterLayout from './pages/exporter/ExporterLayout';
 import InvestorLayout from './pages/investor/InvestorLayout';
 
 import './index.css';
@@ -76,10 +76,10 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* ── Exporter portal (stub) ── */}
-        <Route path="/exporter/dashboard" element={
+        {/* ── Exporter portal ── */}
+        <Route path="/exporter/*" element={
           <ProtectedRoute allowedRoles={['EXPORTER']}>
-            <ExporterDashboard />
+            <ExporterLayout />
           </ProtectedRoute>
         } />
       </Routes>

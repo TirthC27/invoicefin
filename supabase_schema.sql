@@ -408,7 +408,103 @@ CREATE POLICY "Users update own notifications"
 
 
 -- ═══════════════════════════════════════════════════════
--- SECTION 4 — SEED DATA
+-- SECTION 4 — EXPORTER INVOICE LIFECYCLE MODULE
+-- ═══════════════════════════════════════════════════════
+
+-- =========================
+-- INVOICES
+-- =========================
+CREATE TABLE IF NOT EXISTS public.invoices (
+    id BIGSERIAL PRIMARY KEY,
+    exporter_id BIGINT REFERENCES public.app_users(id) ON DELETE CASCADE,
+    invoice_number TEXT UNIQUE NOT NULL,
+    buyer_name TEXT NOT NULL,
+    buyer_company TEXT NOT NULL,
+    amount NUMERIC(20,2) NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD',
+    issue_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    po_number TEXT DEFAULT '',
+    country TEXT DEFAULT 'United States',
+    description TEXT DEFAULT '',
+    pdf_url TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'Verified'
+        CHECK (status IN ('Draft','Verified','Funding','Funded','Active','Completed')),
+    funded_amount NUMERIC(20,2) DEFAULT 0,
+    blockchain_hash TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_exporter ON public.invoices(exporter_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_number ON public.invoices(invoice_number);
+
+DROP TRIGGER IF EXISTS trg_invoices_updated_at ON public.invoices;
+CREATE TRIGGER trg_invoices_updated_at
+    BEFORE UPDATE ON public.invoices
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- =========================
+-- INVOICE_POOLS
+-- =========================
+CREATE TABLE IF NOT EXISTS public.invoice_pools (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT UNIQUE NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    pool_size NUMERIC(20,2) NOT NULL,
+    expected_roi NUMERIC(6,2) NOT NULL,
+    funding_deadline DATE NOT NULL,
+    min_investment NUMERIC(20,2) NOT NULL,
+    max_investment NUMERIC(20,2) NOT NULL,
+    amount_funded NUMERIC(20,2) DEFAULT 0,
+    is_visible_to_investors BOOLEAN DEFAULT TRUE,
+    status TEXT DEFAULT 'open' CHECK (status IN ('open','fully_funded','closed')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoice_pools_invoice ON public.invoice_pools(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_pools_visible ON public.invoice_pools(is_visible_to_investors);
+
+DROP TRIGGER IF EXISTS trg_invoice_pools_updated_at ON public.invoice_pools;
+CREATE TRIGGER trg_invoice_pools_updated_at
+    BEFORE UPDATE ON public.invoice_pools
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+-- =========================
+-- UPLOAD_HISTORY (Activity Log)
+-- =========================
+CREATE TABLE IF NOT EXISTS public.upload_history (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    pool_id BIGINT REFERENCES public.invoice_pools(id) ON DELETE SET NULL,
+    action_type TEXT NOT NULL CHECK (action_type IN ('uploaded','verified','pool_created','funded','matured','status_changed')),
+    description TEXT NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_upload_history_invoice ON public.upload_history(invoice_id);
+
+-- RLS
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Exporters read own invoices" ON public.invoices;
+CREATE POLICY "Exporters read own invoices" ON public.invoices FOR SELECT
+    USING (exporter_id IN (SELECT id FROM public.app_users WHERE supabase_uid = auth.uid()));
+
+ALTER TABLE public.invoice_pools ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can read visible invoice pools" ON public.invoice_pools;
+CREATE POLICY "Anyone can read visible invoice pools" ON public.invoice_pools FOR SELECT
+    USING (is_visible_to_investors = true);
+
+ALTER TABLE public.upload_history ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Exporters read history for own invoices" ON public.upload_history;
+CREATE POLICY "Exporters read history for own invoices" ON public.upload_history FOR SELECT
+    USING (invoice_id IN (SELECT i.id FROM public.invoices i JOIN public.app_users au ON au.id = i.exporter_id WHERE au.supabase_uid = auth.uid()));
+
+
+-- ═══════════════════════════════════════════════════════
+-- SECTION 5 — SEED DATA
 -- ═══════════════════════════════════════════════════════
 
 -- Demo invoice pools (original seed, kept as-is)
@@ -419,34 +515,8 @@ INSERT INTO public.pools (invoice_amount, funded_amount, interest_rate, risk_sco
 ON CONFLICT DO NOTHING;
 
 -- ═══════════════════════════════════════════════════════
--- SECTION 5 — MIGRATION NOTES
+-- SECTION 6 — MIGRATION NOTES
 -- ═══════════════════════════════════════════════════════
--- If you already have the original 4 tables and are adding
--- only the new columns, run these ALTER TABLE statements:
---
--- ALTER TABLE public.investments
---   ADD COLUMN IF NOT EXISTS expected_profit NUMERIC(20,8) DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS roi NUMERIC(6,2) DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS transaction_fee NUMERIC(20,8) DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS returns_due_at TIMESTAMPTZ,
---   ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ,
---   ADD COLUMN IF NOT EXISTS block_number BIGINT;
---
--- -- Expand status check constraint:
--- ALTER TABLE public.investments
---   DROP CONSTRAINT IF EXISTS investments_status_check,
---   ADD CONSTRAINT investments_status_check
---     CHECK (status IN ('pending','confirmed','active','completed','overdue','defaulted','failed'));
---
--- ALTER TABLE public.portfolios
---   ADD COLUMN IF NOT EXISTS current_value NUMERIC(20,8) DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS total_profit NUMERIC(20,8) DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS completed_count INT DEFAULT 0,
---   ADD COLUMN IF NOT EXISTS pending_returns NUMERIC(20,8) DEFAULT 0;
---
--- ALTER TABLE public.recovery_cases
---   ADD COLUMN IF NOT EXISTS investment_id BIGINT REFERENCES public.investments(id) ON DELETE SET NULL;
---
 -- The Django backend (SQLite) holds the authoritative local copy
 -- of all models. These Supabase tables are for:
 --   (a) Supabase Dashboard visibility / reporting
