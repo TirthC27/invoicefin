@@ -17,7 +17,7 @@ import './index.css';
  * This preserves backward compatibility: existing /dashboard URLs still work.
  */
 function RoleRedirect() {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -30,9 +30,11 @@ function RoleRedirect() {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !session) return <Navigate to="/login" replace />;
 
-  switch (user.role) {
+  const role = (user?.role || 'INVESTOR').toUpperCase();
+
+  switch (role) {
     case 'ADMIN': return <Navigate to="/admin/dashboard" replace />;
     case 'LAW_FIRM': return <Navigate to="/lawfirm/dashboard" replace />;
     case 'EXPORTER': return <Navigate to="/exporter/dashboard" replace />;

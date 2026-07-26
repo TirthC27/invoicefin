@@ -71,22 +71,7 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
         if (Number(amount) > remaining) { setError(`Max investable: ${remaining.toFixed(2)} ETH`); return; }
         setStep('pending'); setError('');
         try {
-            let result;
-            if (signer && signer.isMock) {
-                const dummyTxHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-                result = {
-                    txHash: dummyTxHash,
-                    wait: async () => {
-                        await new Promise(r => setTimeout(r, 1200));
-                        return {
-                            blockNumber: Math.floor(Math.random() * 500000) + 12000000,
-                            status: 'confirmed'
-                        };
-                    }
-                };
-            } else {
-                result = await investInPool(signer, pool.id, amount);
-            }
+            const result = await investInPool(signer, pool.id, amount);
             setTxHash(result.txHash);
             setStep('confirming');
             const receipt = await result.wait();
@@ -195,13 +180,36 @@ export default function Dashboard() {
     const [investModal, setInvestModal] = useState(null);
     const [selectedPool, setSelectedPool] = useState(null);
 
-    /* Portfolio — localStorage-backed */
-    const LS_INV = 'invoicefi_investments';
-    const LS_TX = 'invoicefi_transactions';
-    const [investments, setInvestments] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_INV) || '[]'); } catch { return []; } });
-    const [transactions, setTransactions] = useState(() => { try { return JSON.parse(localStorage.getItem(LS_TX) || '[]'); } catch { return []; } });
-    useEffect(() => { localStorage.setItem(LS_INV, JSON.stringify(investments)); }, [investments]);
-    useEffect(() => { localStorage.setItem(LS_TX, JSON.stringify(transactions)); }, [transactions]);
+    /* Portfolio & Investments — fetched from backend API */
+    const [investments, setInvestments] = useState([]);
+    const [transactions, setTransactions] = useState([]);
+    const [portfolioSummary, setPortfolioSummary] = useState(null);
+
+    const loadUserData = useCallback(async () => {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session?.access_token) return;
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+            const headers = { 'Authorization': `Bearer ${session.access_token}` };
+
+            const [pRes, iRes] = await Promise.all([
+                fetch(`${API_BASE}/portfolio/`, { headers }).catch(() => null),
+                fetch(`${API_BASE}/investments/`, { headers }).catch(() => null),
+            ]);
+
+            if (pRes?.ok) {
+                const pData = await pRes.json();
+                setPortfolioSummary(pData.portfolio || pData);
+                if (pData.investments) setInvestments(pData.investments);
+            }
+            if (iRes?.ok) {
+                const iData = await iRes.json();
+                setInvestments(Array.isArray(iData) ? iData : iData.results || []);
+            }
+        } catch (err) {
+            console.error('Failed to load user portfolio data:', err);
+        }
+    }, []);
 
     const navigate = useNavigate();
 
@@ -215,25 +223,26 @@ export default function Dashboard() {
         })();
     }, [navigate]);
 
-    /* ── Demo pools ── */
-    const CONTRACT_ADDR = '0x338aAe9fee222bC542f8010c8E6486A8CC8EC4CC';
-    const DEMO_POOLS = [
-        { id: 1, invoice_amount: 5.00, funded_amount: 0, interest_rate: 14.20, risk_score: 85, status: 'open', due_date: '2026-07-12', expected_return: 14.20, contract_address: CONTRACT_ADDR, name: 'Tata Steel Export Invoice', company: 'Tata Steel Ltd.', logo: '🏭', description: 'Export receivable for 500 metric tons of hot-rolled steel shipped to Rotterdam, Netherlands.', industry: 'Steel & Metals', country: '🇮🇳 India', debtor: 'ArcelorMittal Distribution', invoiceNo: 'TSE-2026-04871', tenure: '90 days' },
-        { id: 2, invoice_amount: 3.00, funded_amount: 0.75, interest_rate: 12.80, risk_score: 62, status: 'partially_funded', due_date: '2026-06-15', expected_return: 12.80, contract_address: CONTRACT_ADDR, name: 'Payverge Fintech Receivable', company: 'Payverge Technologies', logo: '💳', description: 'SaaS subscription receivable from enterprise clients across East Africa — payment gateway services.', industry: 'Fintech', country: '🇰🇪 Kenya', debtor: 'M-Pesa Business Solutions', invoiceNo: 'PVG-2026-00293', tenure: '60 days' },
-        { id: 3, invoice_amount: 2.00, funded_amount: 0, interest_rate: 13.50, risk_score: 45, status: 'open', due_date: '2026-05-30', expected_return: 13.50, contract_address: CONTRACT_ADDR, name: 'Flowtap Logistics Freight', company: 'Flowtap Logistics', logo: '🚛', description: 'Cross-border freight invoice for 120 TEU container shipment — Lagos to Durban corridor.', industry: 'Logistics & Shipping', country: '🇳🇬 Nigeria', debtor: 'Maersk Africa Line', invoiceNo: 'FTL-2026-01582', tenure: '45 days' },
-    ];
-
     const loadPools = useCallback(async () => {
         setPoolsLoading(true);
         try {
             const { data, error } = await supabase.from('pools').select('*').order('created_at', { ascending: false });
-            if (!error && data?.length > 0) { setPools(data); if (!selectedPool) setSelectedPool(data[0]); }
-            else { setPools(DEMO_POOLS); if (!selectedPool) setSelectedPool(DEMO_POOLS[0]); }
-        } catch { setPools(DEMO_POOLS); if (!selectedPool) setSelectedPool(DEMO_POOLS[0]); }
+            if (!error && data) {
+                setPools(data);
+                if (!selectedPool && data.length > 0) setSelectedPool(data[0]);
+            } else {
+                setPools([]);
+            }
+        } catch {
+            setPools([]);
+        }
         setPoolsLoading(false);
     }, [selectedPool]);
 
-    useEffect(() => { if (activeNav === 'invoices' || activeNav === 'home') loadPools(); }, [activeNav, loadPools]);
+    useEffect(() => {
+        if (activeNav === 'invoices' || activeNav === 'home') loadPools();
+        if (activeNav === 'portfolio' || activeNav === 'home' || activeNav === 'transactions') loadUserData();
+    }, [activeNav, loadPools, loadUserData]);
 
     /* ── Record investment ── */
     const recordInvestment = useCallback(async (poolId, amount, txHash, blockNumber, interestRate) => {
@@ -363,8 +372,8 @@ export default function Dashboard() {
                                     key={item.id}
                                     onClick={() => { setActiveNav(targetNav); setIsMobileMenuOpen(false); }}
                                     className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${isActive
-                                            ? 'nav-btn-stripe-active text-white'
-                                            : 'text-[#A1A1AA] hover:text-white'
+                                        ? 'nav-btn-stripe-active text-white'
+                                        : 'text-[#A1A1AA] hover:text-white'
                                         }`}
                                 >
                                     <Icon className="w-4.5 h-4.5 shrink-0" />
@@ -399,7 +408,7 @@ export default function Dashboard() {
                                     <svg width="12" height="12" viewBox="0 0 38 33" fill="none">
                                         <path d="M29.27 10.06a2.88 2.88 0 0 0-2.84 0L20.8 13.65l-3.79 2.13-5.6 3.59a2.88 2.88 0 0 1-2.85 0L4 16.17a2.76 2.76 0 0 1-1.42-2.4v-5.3a2.75 2.75 0 0 1 1.42-2.4l4.55-2.6a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.43 2.4v3.59l3.79-2.19V8.3a2.75 2.75 0 0 0-1.42-2.4L11.4 1.12a2.88 2.88 0 0 0-2.84 0L.71 5.9A2.75 2.75 0 0 0 0 8.37v9.52a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l5.6-3.18 3.79-2.19 5.6-3.18a2.88 2.88 0 0 1 2.84 0l4.55 2.6a2.76 2.76 0 0 1 1.42 2.4v5.3a2.75 2.75 0 0 1-1.42 2.4l-4.55 2.6a2.88 2.88 0 0 1-2.84 0L23 29.45a2.76 2.76 0 0 1-1.42-2.4v-3.59l-3.79 2.19v3.59a2.75 2.75 0 0 0 1.42 2.4l7.9 4.5a2.88 2.88 0 0 0 2.84 0l7.9-4.5A2.75 2.75 0 0 0 38 29.3V19.7a2.75 2.75 0 0 0-1.43-2.4l-7.3-4.18z" fill="#8247E5" />
                                     </svg>
-                                    <span className="text-[10px] text-[#A1A1AA] font-extrabold tracking-wide">Polygon Mainnet</span>
+                                    <span className="text-[10px] text-[#A1A1AA] font-extrabold tracking-wide">Sepolia Testnet</span>
                                 </div>
                             </div>
                         ) : (
@@ -455,8 +464,8 @@ export default function Dashboard() {
                                             key={item.id}
                                             onClick={() => { setActiveNav(targetNav); setIsMobileMenuOpen(false); }}
                                             className={`nav-btn-stripe flex items-center gap-[16px] w-full px-4 font-semibold text-sm transition-all cursor-pointer ${isActive
-                                                    ? 'nav-btn-stripe-active text-white'
-                                                    : 'text-[#A1A1AA] hover:text-white'
+                                                ? 'nav-btn-stripe-active text-white'
+                                                : 'text-[#A1A1AA] hover:text-white'
                                                 }`}
                                         >
                                             <Icon className="w-4.5 h-4.5 shrink-0" />
@@ -729,8 +738,8 @@ export default function Dashboard() {
                                                 key={pool.id}
                                                 onClick={() => setSelectedPool(pool)}
                                                 className={`p-3.5 rounded-xl cursor-pointer border transition-all duration-200 ${active
-                                                        ? 'bg-[#7C5CFC]/5 border-[#7C5CFC]/30 shadow-md'
-                                                        : 'bg-white/[0.01] border-white/4 hover:bg-white/[0.03] hover:border-white/8'
+                                                    ? 'bg-[#7C5CFC]/5 border-[#7C5CFC]/30 shadow-md'
+                                                    : 'bg-white/[0.01] border-white/4 hover:bg-white/[0.03] hover:border-white/8'
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-center mb-3">
@@ -984,7 +993,11 @@ export default function Dashboard() {
                                     </div>
                                     <div className="pt-4 border-t border-white/[0.04] flex justify-between items-center text-xs font-bold text-white">
                                         <span>Average APY</span>
-                                        <span className="text-[#22C55E]">13.52%</span>
+                                        <span className="text-[#22C55E]">
+                                            {pools.length > 0
+                                                ? `${(pools.reduce((s, p) => s + Number(p.interest_rate || 0), 0) / pools.length).toFixed(2)}%`
+                                                : '0.00%'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -1004,7 +1017,7 @@ export default function Dashboard() {
 
                                 <div>
                                     <label className="text-[10px] font-extrabold text-[#A1A1AA] uppercase tracking-wider block mb-2">Identity UUID</label>
-                                    <input type="text" readOnly value={user?.id || 'mock-uuid'} className="w-full p-3.5 rounded-xl border border-white/8 bg-white/2 text-white font-mono text-[9px] outline-none" />
+                                    <input type="text" readOnly value={user?.id || ''} className="w-full p-3.5 rounded-xl border border-white/8 bg-white/2 text-white font-mono text-[9px] outline-none" />
                                 </div>
                             </div>
                         </div>

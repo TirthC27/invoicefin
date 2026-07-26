@@ -74,21 +74,7 @@ export function WalletProvider({ children }) {
   const connectWallet = useCallback(async () => {
     const providerObj = getMetaMaskProvider();
     if (!providerObj) {
-      const useMock = window.confirm(
-        'MetaMask not detected.\n\nWould you like to connect a mock wallet address for previewing the local dashboard?'
-      );
-      if (useMock) {
-        const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
-        setWalletAddress(mockAddress);
-        setSigner({
-          isMock: true,
-          getAddress: async () => mockAddress,
-        });
-        setConnectionStatus('connected');
-        localStorage.setItem(LS_KEY, 'true');
-        localStorage.setItem(LS_KEY + '_mock', 'true');
-        return;
-      }
+      alert('MetaMask extension is required to interact with the blockchain. Please install MetaMask and try again.');
       return;
     }
 
@@ -198,35 +184,25 @@ export function WalletProvider({ children }) {
     const wasMock = localStorage.getItem(LS_KEY + '_mock') === 'true';
 
     if (wasConnected) {
-      if (wasMock) {
-        const mockAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
-        setWalletAddress(mockAddress);
-        setSigner({
-          isMock: true,
-          getAddress: async () => mockAddress,
-        });
-        setConnectionStatus('connected');
-      } else {
-        const providerObj = getMetaMaskProvider();
-        if (providerObj) {
-          reconnecting.current = true;
-          providerObj.request({ method: 'eth_accounts' })
-            .then(async (accounts) => {
-              if (accounts && accounts.length > 0) {
-                setWalletAddress(accounts[0]);
-                const result = await setupProviderAndSigner();
-                if (result && result.chainId === POLYGON_AMOY.chainIdDecimal) {
-                  setConnectionStatus('connected');
-                } else if (result) {
-                  setConnectionStatus('wrong_network');
-                }
-              } else {
-                localStorage.removeItem(LS_KEY);
+      const providerObj = getMetaMaskProvider();
+      if (providerObj) {
+        reconnecting.current = true;
+        providerObj.request({ method: 'eth_accounts' })
+          .then(async (accounts) => {
+            if (accounts && accounts.length > 0) {
+              setWalletAddress(accounts[0]);
+              const result = await setupProviderAndSigner();
+              if (result && result.chainId === POLYGON_AMOY.chainIdDecimal) {
+                setConnectionStatus('connected');
+              } else if (result) {
+                setConnectionStatus('wrong_network');
               }
-            })
-            .catch(() => localStorage.removeItem(LS_KEY))
-            .finally(() => { reconnecting.current = false; });
-        }
+            } else {
+              localStorage.removeItem(LS_KEY);
+            }
+          })
+          .catch(() => localStorage.removeItem(LS_KEY))
+          .finally(() => { reconnecting.current = false; });
       }
     }
   }, [setupProviderAndSigner]);

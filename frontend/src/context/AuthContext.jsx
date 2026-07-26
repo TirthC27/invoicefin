@@ -1,10 +1,30 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+/**
+ * Helper to construct a consistent user object from session metadata
+ * and optional backend profile data.
+ */
+function buildUserFromSession(session, backendData = null) {
+  if (!session?.user) return null;
+  const metadata = session.user.user_metadata || {};
+  const rawRole = backendData?.role || metadata.role || 'INVESTOR';
+
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    role: String(rawRole).toUpperCase(),
+    status: backendData?.status || 'ACTIVE',
+    full_name: backendData?.full_name || metadata.full_name || session.user.email?.split('@')[0],
+    wallet_address: backendData?.wallet_address || null,
+  };
+}
 
 /**
  * AuthProvider wraps the app and provides:
@@ -19,23 +39,22 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   // Fetch user profile from backend (includes local AppUser role)
-  const fetchUserProfile = useCallback(async (accessToken) => {
+  const fetchUserProfile = useCallback(async (currentSession) => {
+    if (!currentSession?.access_token) return;
     try {
       const resp = await fetch(`${API_BASE}/user/me/`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${currentSession.access_token}`,
           'Content-Type': 'application/json',
         },
       });
       if (resp.ok) {
         const data = await resp.json();
-        setUser(data);
-        return data;
+        setUser(buildUserFromSession(currentSession, data));
       }
     } catch (err) {
       console.error('[Auth] Failed to fetch user profile:', err);
     }
-    return null;
   }, []);
 
   // Initialize auth state
@@ -47,7 +66,8 @@ export function AuthProvider({ children }) {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (mounted && currentSession) {
           setSession(currentSession);
-          await fetchUserProfile(currentSession.access_token);
+          setUser(buildUserFromSession(currentSession));
+          await fetchUserProfile(currentSession);
         }
       } catch (err) {
         console.error('[Auth] Init error:', err);
@@ -65,7 +85,8 @@ export function AuthProvider({ children }) {
         setSession(newSession);
 
         if (newSession) {
-          await fetchUserProfile(newSession.access_token);
+          setUser(buildUserFromSession(newSession));
+          await fetchUserProfile(newSession);
         } else {
           setUser(null);
         }
@@ -145,9 +166,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (!isAuthenticated) {
-    // Redirect to login
-    window.location.href = '/login';
-    return null;
+    return <Navigate to="/login" replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {

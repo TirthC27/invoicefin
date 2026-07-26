@@ -11,31 +11,31 @@ const STEPS = [
 ];
 
 export default function InvoiceVerificationModal({ isOpen, invoiceData, blockchainHash }) {
-  const [progress, setProgress]     = useState(0);
-  const [stepIndex, setStepIndex]   = useState(0);
-  const [done, setDone]             = useState(false);
-  const navigate  = useNavigate();
-  const started   = useRef(false);
+  const [progress, setProgress] = useState(0);
+  const [stepIndex, setStepIndex] = useState(0);
+  const [done, setDone] = useState(false);
+  const navigate = useNavigate();
+  const started = useRef(false);
 
   useEffect(() => {
     if (!isOpen || started.current) return;
     started.current = true;
 
     // Random total duration 3000–5000 ms
-    const duration    = Math.floor(Math.random() * 2001) + 3000;
-    const TICK        = 50;
-    const totalTicks  = duration / TICK;
-    let elapsed       = 0;
+    const duration = Math.floor(Math.random() * 2001) + 3000;
+    const TICK = 50;
+    const totalTicks = duration / TICK;
+    let elapsed = 0;
 
     const id = setInterval(() => {
       elapsed++;
       const pct = Math.min(100, (elapsed / totalTicks) * 100);
       setProgress(pct);
-      if      (pct < 25) setStepIndex(0);
+      if (pct < 25) setStepIndex(0);
       else if (pct < 50) setStepIndex(1);
       else if (pct < 75) setStepIndex(2);
       else if (pct < 99) setStepIndex(3);
-      else               setStepIndex(4);
+      else setStepIndex(4);
 
       if (elapsed >= totalTicks) {
         clearInterval(id);

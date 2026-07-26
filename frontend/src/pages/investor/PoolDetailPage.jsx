@@ -65,16 +65,7 @@ export default function PoolDetailPage() {
     setStep('pending');
     setError('');
     try {
-      let result;
-      if (wallet.signer?.isMock) {
-        const dummyTxHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        result = {
-          txHash: dummyTxHash,
-          wait: async () => { await new Promise(r => setTimeout(r, 1500)); return { blockNumber: Math.floor(Math.random() * 500000) + 12000000, status: 'confirmed' }; },
-        };
-      } else {
-        result = await investInPool(wallet.signer, pool.contract_pool_id, amount);
-      }
+      const result = await investInPool(wallet.signer, pool.contract_pool_id, amount);
       setTxHash(result.txHash);
       setStep('confirming');
       const receipt = await result.wait();

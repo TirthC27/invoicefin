@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 
+import { useAuth } from '../context/AuthContext';
+
 /* ─────────────────────────────────────────────────────────────
    SVG ICONS (inline — zero extra dependencies)
 ───────────────────────────────────────────────────────────── */
@@ -176,7 +178,15 @@ export default function Login() {
   /* ── Wallet context ── */
   const { connectWallet, connectionStatus, truncatedAddress } = useWallet();
 
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   /* ── Existing handleLogin (UNCHANGED logic) ── */
   const handleLogin = async (e) => {
@@ -188,7 +198,7 @@ export default function Login() {
       const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
       if (data?.session) {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       setError(err.message || 'Invalid credentials. Please try again.');

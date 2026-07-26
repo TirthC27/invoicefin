@@ -103,7 +103,7 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
           {done ? 'Verification Complete!' : 'Analyzing Invoice...'}
         </h3>
         <p style={{ fontSize: 13, color: '#A0A0A8', marginBottom: 26, lineHeight: 1.5 }}>
-          AI fraud detection &amp; Polygon Amoy smart contract verification in progress.
+          Server-side field validation &amp; reference hash generation in progress.
         </p>
 
         {/* Progress bar */}
@@ -129,7 +129,7 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
         {blockchainHash && (
           <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: '12px 14px', textAlign: 'left' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#A0A0A8', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>
-              <ShieldCheck size={13} color="#22C55E" /> Blockchain Hash (simulated)
+              <ShieldCheck size={13} color="#22C55E" /> Invoice Reference Hash
             </div>
             <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#E0E0E8', wordBreak: 'break-all', lineHeight: 1.5, opacity: progress > 60 ? 1 : 0.3, transition: 'opacity .4s' }}>
               {blockchainHash}
