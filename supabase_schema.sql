@@ -503,13 +503,43 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT,
     full_name TEXT DEFAULT '',
-    role TEXT DEFAULT 'investor'
-        CHECK (role IN ('investor', 'exporter', 'law_firm', 'admin')),
+    role TEXT DEFAULT 'INVESTOR'
+        CHECK (role IN ('investor', 'exporter', 'law_firm', 'admin', 'INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN')),
     wallet_address TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_profiles_wallet ON public.profiles(wallet_address);
+
+-- =========================
+-- TRIGGER: Auto-create app_users row on auth.users insert
+-- Ensures there is NEVER a Supabase user without an app_users row.
+-- =========================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    user_role TEXT;
+    user_name TEXT;
+BEGIN
+    user_role := UPPER(COALESCE(NEW.raw_user_meta_data->>'role', 'INVESTOR'));
+    IF user_role NOT IN ('INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN') THEN
+        user_role := 'INVESTOR';
+    END IF;
+    user_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', '');
+
+    INSERT INTO public.app_users (supabase_uid, email, full_name, role, status)
+    VALUES (NEW.id, NEW.email, user_name, user_role, 'ACTIVE')
+    ON CONFLICT (supabase_uid) DO NOTHING;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
+CREATE TRIGGER trg_on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
 
 
 -- =========================

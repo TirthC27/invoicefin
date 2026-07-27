@@ -16,15 +16,16 @@ import {
 } from 'lucide-react';
 import { exporterApi } from '../../lib/api';
 import {
-  STATUS_COLOR, StatusBadge, fmtAmount, formatCountdown, useTick,
+  fmtAmount, formatCountdown, useTick,
 } from './exporterUtils';
+import StatusBadge from './StatusBadge';
 
 const ALL_STATUSES = ['Draft', 'Verified', 'Funding', 'Funded', 'Active', 'Completed'];
 const COUNTABLE    = new Set(['Funded', 'Active']);
 
 function CompactCountdown({ dueDate, tick }) {
   const target   = new Date(dueDate + 'T23:59:59Z').getTime();
-  const ms       = Math.max(0, target - Date.now());
+  const ms       = Math.max(0, target - tick);
   const expired  = ms === 0;
   return (
     <span style={{
@@ -81,7 +82,7 @@ export default function InvoicesPage() {
     }
   }, [page, sort, search, statusFilter]);
 
-  useEffect(() => { load(); }, []); // initial load
+  useEffect(() => { load(); }, [load]);
 
   const handleSort = (field) => {
     const newSort = { field, dir: sort.field === field && sort.dir === 'asc' ? 'desc' : 'asc' };
@@ -214,7 +215,6 @@ export default function InvoicesPage() {
                 </td></tr>
               ) : invoices.map((inv) => {
                 const fundPct = inv.funding_percent ?? 0;
-                const color   = STATUS_COLOR[inv.status] || '#A0A0A8';
                 return (
                   <tr key={inv.id}
                     style={{ borderBottom: '1px solid rgba(255,255,255,.04)', transition: 'background .15s', cursor: 'default' }}

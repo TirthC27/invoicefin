@@ -151,23 +151,40 @@ export default function Signup() {
   const navigate = useNavigate();
 
   /* ── New UI-only state ── */
+  const [role, setRole] = useState('INVESTOR');
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
 
-  /* ── Existing handleSignup (UNCHANGED logic) ── */
+  /* ── Existing handleSignup ── */
   const handleSignup = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setSuccess(null);
 
-    console.log('[Signup] Attempting signup for:', email);
+    const selectedRole = String(role || 'INVESTOR').toUpperCase();
+    if (selectedRole !== 'INVESTOR' && selectedRole !== 'EXPORTER') {
+      setError('Public registration is allowed for Investor and Exporter roles only.');
+      setLoading(false);
+      return;
+    }
+
+    console.log('[Signup] Attempting signup for:', email, 'role:', selectedRole);
 
     try {
-      // 1. Sign up via Supabase Auth
-      const { data, error: signupError } = await supabase.auth.signUp({ email, password });
+      // 1. Sign up via Supabase Auth with metadata
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: selectedRole,
+          },
+        },
+      });
 
       console.log('[Signup] Supabase response:', { data, signupError });
 
@@ -179,7 +196,7 @@ export default function Signup() {
           id: data.user.id,
           email: data.user.email,
           full_name: fullName,
-          role: 'investor',
+          role: selectedRole,
         }, { onConflict: 'id' });
 
         if (profileError) {
@@ -474,6 +491,57 @@ export default function Signup() {
 
               {/* ── AUTH FORM ── */}
               <form onSubmit={handleSignup}>
+
+                {/* Role Selector */}
+                <div className="lp-input-group">
+                  <label className="lp-label">Register As</label>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => setRole('INVESTOR')}
+                      style={{
+                        flex: 1,
+                        height: 42,
+                        borderRadius: 10,
+                        border: role === 'INVESTOR' ? '1px solid #7C5CFC' : '1px solid rgba(255,255,255,0.08)',
+                        background: role === 'INVESTOR' ? 'rgba(124,92,252,0.15)' : 'rgba(255,255,255,0.02)',
+                        color: role === 'INVESTOR' ? '#FFFFFF' : '#A0A0A8',
+                        fontWeight: role === 'INVESTOR' ? 600 : 400,
+                        fontSize: 13.5,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>💼</span> Investor
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRole('EXPORTER')}
+                      style={{
+                        flex: 1,
+                        height: 42,
+                        borderRadius: 10,
+                        border: role === 'EXPORTER' ? '1px solid #7C5CFC' : '1px solid rgba(255,255,255,0.08)',
+                        background: role === 'EXPORTER' ? 'rgba(124,92,252,0.15)' : 'rgba(255,255,255,0.02)',
+                        color: role === 'EXPORTER' ? '#FFFFFF' : '#A0A0A8',
+                        fontWeight: role === 'EXPORTER' ? 600 : 400,
+                        fontSize: 13.5,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>🏢</span> Exporter
+                    </button>
+                  </div>
+                </div>
 
                 {/* Full Name input */}
                 <div className="lp-input-group">

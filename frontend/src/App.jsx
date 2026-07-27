@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth, ProtectedRoute } from './context/AuthContext';
+import { ProtectedRoute } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import NotFound from './pages/NotFound';
 
 // New role-based pages
 import AdminLayout from './pages/admin/AdminLayout';
@@ -84,6 +85,9 @@ function App() {
             <ExporterLayout />
           </ProtectedRoute>
         } />
+
+        {/* Application-level 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

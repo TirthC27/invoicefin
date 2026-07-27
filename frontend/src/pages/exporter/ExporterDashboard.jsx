@@ -9,23 +9,24 @@ import {
   Clock, Activity, Plus, ChevronRight,
 } from 'lucide-react';
 import { exporterApi } from '../../lib/api';
-import { STATUS_COLOR, StatusBadge, fmtAmount, timeAgo } from './exporterUtils';
+import { STATUS_COLOR, fmtAmount, timeAgo } from './exporterUtils';
+import StatusBadge from './StatusBadge';
 
 // ── Mini SVG Donut Chart ────────────────────────────────────────
 function DonutChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  let offset  = 25; // start at top
   const R = 40, cx = 50, cy = 50;
   const circumference = 2 * Math.PI * R;
 
-  const slices = data.filter((d) => d.value > 0).map((d) => {
-    const pct   = d.value / total;
-    const dash  = pct * circumference;
-    const gap   = circumference - dash;
-    const s     = { ...d, dash, gap, offset };
-    offset     += pct * 100;
-    return s;
-  });
+  const slices = data.filter((d) => d.value > 0).reduce((acc, d) => {
+    const pct = d.value / total;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    return {
+      offset: acc.offset + pct * 100,
+      items: [...acc.items, { ...d, dash, gap, offset: acc.offset }],
+    };
+  }, { offset: 25, items: [] }).items;
 
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', maxWidth: 180, display: 'block', margin: '0 auto' }}>

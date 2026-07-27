@@ -4,6 +4,7 @@ import threading
 import requests
 from decimal import Decimal
 from datetime import timedelta
+from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
@@ -11,11 +12,11 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 
 logger = logging.getLogger(__name__)
 
-from .authentication import SupabaseJWTAuthentication
+from .authentication import SupabaseJWTAuthentication, require_role
+from .user_sync import sync_app_user_from_identity
 from .models import Pool, Investment, Transaction, Portfolio, RecoveryCase, RecoveryEvent
 from .serializers import (
     PoolSerializer, PoolDetailSerializer, InvestmentSerializer,
-    InvestmentInitiateSerializer, InvestmentConfirmSerializer,
     TransactionSerializer, PortfolioSerializer,
 )
 from .constants import TRANSACTION_FEE_RATE
@@ -40,39 +41,27 @@ def health_check(request):
 @permission_classes([IsAuthenticated])
 def get_user_me(request):
     """
-    Returns user data decoded from the Supabase JWT.
-    Includes role/status from local AppUser if exists,
-    and optionally fetches the profile from Supabase Data API.
+    Return authenticated app user data and idempotently sync the local AppUser
+    mirror used by notifications, recovery, admin, exporter, and law firm flows.
     """
-    supabase_url = os.getenv('SUPABASE_URL')
-    service_role_key = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
-
-    profile = None
-    if supabase_url and service_role_key:
-        try:
-            # Fetch profile from supabase using service role key
-            r = requests.get(
-                f"{supabase_url}/rest/v1/profiles",
-                headers={
-                    "apikey": service_role_key,
-                    "Authorization": f"Bearer {service_role_key}",
-                    "Content-Type": "application/json",
-                },
-                params={"id": f"eq.{request.user.id}", "select": "*"},
-                timeout=5,
-            )
-            if r.ok and r.json():
-                profile = r.json()[0]
-        except Exception:
-            pass  # Fall back to JWT claims
+    profile = getattr(request.user, 'profile', None) or {}
+    identity = {
+        'id': request.user.id,
+        'email': request.user.email,
+        'role': request.user.role,
+        'status': getattr(request.user, 'status', 'ACTIVE'),
+        'full_name': getattr(request.user, 'full_name', '') or profile.get('full_name') or '',
+    }
+    app_user = sync_app_user_from_identity(identity, explicit_profile=bool(profile.get('role') or profile.get('status')))
+    request.user.app_user = app_user
 
     return Response({
         "id": request.user.id,
-        "email": request.user.email,
-        "role": request.user.role,
-        "status": getattr(request.user, 'status', 'ACTIVE'),
-        "full_name": profile.get('full_name') if profile else getattr(request.user, 'full_name', None),
-        "wallet_address": profile.get('wallet_address') if profile else None,
+        "email": app_user.email if app_user else request.user.email,
+        "role": app_user.role if app_user else request.user.role,
+        "status": app_user.status if app_user else getattr(request.user, 'status', 'ACTIVE'),
+        "full_name": app_user.full_name if app_user else identity['full_name'],
+        "wallet_address": profile.get('wallet_address'),
     })
 
 
@@ -104,6 +93,7 @@ def get_pool_detail(request, pk):
 @api_view(['POST'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
 def create_pool(request):
     """POST /api/pools/create/ — Create a pool record (admin/sync use)."""
     serializer = PoolSerializer(data=request.data)
@@ -120,101 +110,7 @@ def create_pool(request):
 @api_view(['POST'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
-def initiate_investment(request):
-    """
-    POST /api/investments/initiate/
-    Record a pending investment after TX is submitted on-chain.
-    """
-    serializer = InvestmentInitiateSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=400)
-
-    data = serializer.validated_data
-
-    # Prevent duplicate tx_hash
-    if Investment.objects.filter(tx_hash=data['tx_hash']).exists():
-        return Response({"error": "Duplicate tx_hash"}, status=409)
-
-    # Find pool by contract_pool_id
-    try:
-        pool = Pool.objects.get(contract_pool_id=data['pool_id'])
-    except Pool.DoesNotExist:
-        return Response({"error": f"Pool with contract_pool_id={data['pool_id']} not found"}, status=404)
-
-    # Create investment record
-    investment = Investment.objects.create(
-        user_id=request.user.id,
-        wallet_address=data['wallet_address'],
-        pool=pool,
-        amount=data['amount'],
-        tx_hash=data['tx_hash'],
-        status='pending',
-    )
-
-    # Create transaction record
-    Transaction.objects.create(
-        user_id=request.user.id,
-        tx_hash=data['tx_hash'],
-        tx_type='invest',
-        amount=data['amount'],
-        status='pending',
-        pool=pool,
-    )
-
-    return Response(InvestmentSerializer(investment).data, status=201)
-
-
-@api_view(['POST'])
-@authentication_classes([SupabaseJWTAuthentication])
-@permission_classes([IsAuthenticated])
-def confirm_investment(request):
-    """
-    POST /api/investments/confirm/
-    Mark an investment as confirmed after on-chain confirmation.
-    """
-    serializer = InvestmentConfirmSerializer(data=request.data)
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=400)
-
-    data = serializer.validated_data
-
-    try:
-        investment = Investment.objects.get(
-            tx_hash=data['tx_hash'],
-            user_id=request.user.id,
-        )
-    except Investment.DoesNotExist:
-        return Response({"error": "Investment not found"}, status=404)
-
-    if investment.status == 'confirmed':
-        return Response({"message": "Already confirmed"}, status=200)
-
-    # Update investment
-    investment.status = 'confirmed'
-    investment.block_number = data['block_number']
-    investment.confirmed_at = timezone.now()
-    investment.save()
-
-    # Update transaction
-    Transaction.objects.filter(
-        tx_hash=data['tx_hash'],
-        user_id=request.user.id,
-    ).update(status='confirmed')
-
-    # Update pool remaining size
-    pool = investment.pool
-    pool.remaining_size = max(Decimal('0'), pool.remaining_size - investment.amount)
-    pool.save()
-
-    # Update portfolio
-    _update_portfolio(request.user.id, investment.wallet_address)
-
-    return Response(InvestmentSerializer(investment).data)
-
-
-@api_view(['POST'])
-@authentication_classes([SupabaseJWTAuthentication])
-@permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def verify_investment(request):
     """
     POST /api/investments/verify/
@@ -243,16 +139,22 @@ def verify_investment(request):
     # ── Verify wallet ownership ──────────────────────────────────────
     # Fetch the user's registered wallet from their Supabase profile
     user_wallet = _get_user_wallet(request.user.id)
-    if user_wallet:
-        if verified.investor.lower() != user_wallet.lower():
-            logger.warning(
-                "Wallet mismatch: tx investor=%s, user wallet=%s, user=%s",
-                verified.investor, user_wallet, request.user.id,
-            )
-            return Response(
-                {"error": "Transaction wallet does not match your registered wallet."},
-                status=403,
-            )
+    if not user_wallet:
+        logger.warning("Wallet ownership could not be confirmed for user=%s", request.user.id)
+        return Response(
+            {"error": "No registered wallet found. Connect and save your wallet before verifying investments."},
+            status=403,
+        )
+
+    if verified.investor.lower() != user_wallet.lower():
+        logger.warning(
+            "Wallet mismatch: tx investor=%s, user wallet=%s, user=%s",
+            verified.investor, user_wallet, request.user.id,
+        )
+        return Response(
+            {"error": "Transaction wallet does not match your registered wallet."},
+            status=403,
+        )
 
     # ── Find the pool ────────────────────────────────────────────────
     try:
@@ -262,47 +164,68 @@ def verify_investment(request):
             {"error": f"Pool with contract_pool_id={verified.pool_id} not found"},
             status=404,
         )
+    # Save investment + transaction + update unified pool, invoice metadata, and portfolio.
+    with transaction.atomic():
+        pool = Pool.objects.select_for_update().get(contract_pool_id=verified.pool_id)
+        if not pool.is_investable:
+            return Response({"error": "Pool is not accepting investments."}, status=400)
+        if verified.amount_matic > pool.remaining_size:
+            return Response({"error": f"Investment exceeds remaining pool capacity ({pool.remaining_size})."}, status=400)
 
-    # ── Save investment + transaction + update pool & portfolio ──────
-    pool = Pool.objects.get(contract_pool_id=verified.pool_id)
 
-    # ── Server-side financial calculations ────────────────────────────
-    fee = verified.amount_matic * TRANSACTION_FEE_RATE
-    net_amount = verified.amount_matic - fee
-    roi_pct = (pool.apy * Decimal(str(pool.duration_days)) / Decimal('365'))
-    expected_profit = net_amount * roi_pct / Decimal('100')
-    returns_due = timezone.now() + timedelta(days=pool.duration_days)
+        fee = verified.amount_matic * TRANSACTION_FEE_RATE
+        net_amount = verified.amount_matic - fee
+        roi_pct = (pool.apy * Decimal(str(pool.duration_days)) / Decimal('365'))
+        expected_profit = net_amount * roi_pct / Decimal('100')
+        returns_due = timezone.now() + timedelta(days=pool.duration_days)
 
-    investment = Investment.objects.create(
-        user_id=request.user.id,
-        wallet_address=verified.investor,
-        pool=pool,
-        amount=verified.amount_matic,
-        tx_hash=tx_hash,
-        status='active',
-        block_number=verified.block_number,
-        confirmed_at=timezone.now(),
-        expected_profit=expected_profit,
-        roi=roi_pct,
-        transaction_fee=fee,
-        returns_due_at=returns_due,
-    )
+        investment = Investment.objects.create(
+            user_id=request.user.id,
+            wallet_address=verified.investor,
+            pool=pool,
+            amount=verified.amount_matic,
+            tx_hash=tx_hash,
+            status='active',
+            block_number=verified.block_number,
+            confirmed_at=timezone.now(),
+            expected_profit=expected_profit,
+            roi=roi_pct,
+            transaction_fee=fee,
+            returns_due_at=returns_due,
+        )
 
-    Transaction.objects.create(
-        user_id=request.user.id,
-        tx_hash=tx_hash,
-        tx_type='invest',
-        amount=verified.amount_matic,
-        status='confirmed',
-        pool=pool,
-    )
+        Transaction.objects.create(
+            user_id=request.user.id,
+            tx_hash=tx_hash,
+            tx_type='invest',
+            amount=verified.amount_matic,
+            status='confirmed',
+            pool=pool,
+        )
 
-    # Update pool remaining size
-    pool.remaining_size = max(Decimal('0'), pool.remaining_size - verified.amount_matic)
-    pool.save()
+        pool.remaining_size = max(Decimal('0'), pool.remaining_size - verified.amount_matic)
+        if pool.remaining_size == 0:
+            pool.status = 'fully_funded'
+        pool.save(update_fields=['remaining_size', 'status'])
 
-    # Update portfolio
-    _update_portfolio(request.user.id, verified.investor)
+        if pool.invoice_id:
+            invoice = pool.invoice
+            invoice.funded_amount = min(invoice.amount, invoice.funded_amount + verified.amount_matic)
+            if pool.remaining_size == 0:
+                invoice.status = 'Funded'
+            invoice.save(update_fields=['funded_amount', 'status', 'updated_at'])
+
+        try:
+            invoice_pool = pool.invoice_pool_metadata
+            invoice_pool.amount_funded = min(invoice_pool.pool_size, invoice_pool.amount_funded + verified.amount_matic)
+            if pool.remaining_size == 0:
+                invoice_pool.status = 'fully_funded'
+            invoice_pool.save(update_fields=['amount_funded', 'status', 'updated_at'])
+        except Exception:
+            pass
+
+        _update_portfolio(request.user.id, verified.investor)
+
 
     # ── Trigger async email (never blocks the response) ──────────────
     try:
@@ -372,6 +295,7 @@ def _get_user_wallet(user_id):
 @api_view(['POST'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def fail_investment(request):
     """
     POST /api/investments/fail/
@@ -397,6 +321,7 @@ def fail_investment(request):
 @api_view(['GET'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def list_investments(request):
     """GET /api/investments/ — List user's investments."""
     investments = Investment.objects.filter(user_id=request.user.id)
@@ -455,6 +380,7 @@ def _update_portfolio(user_id, wallet_address=''):
 @api_view(['GET'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def get_portfolio(request):
     """GET /api/portfolio/ — Full portfolio: summary + investment list with recovery data."""
     # Recompute portfolio first
@@ -530,6 +456,7 @@ def get_portfolio(request):
 @api_view(['POST'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def calculate_investment(request):
     """
     POST /api/investment/calculate/
@@ -552,8 +479,11 @@ def calculate_investment(request):
     except Pool.DoesNotExist:
         return Response({"error": "Pool not found"}, status=404)
 
+    if not pool.is_investable:
+        return Response({"error": "Pool is not accepting investments."}, status=400)
+
     if amount > pool.remaining_size:
-        return Response({"error": f"Exceeds remaining capacity ({pool.remaining_size} ETH)"}, status=400)
+        return Response({"error": f"Exceeds remaining capacity ({pool.remaining_size} MATIC)"}, status=400)
 
     fee = amount * TRANSACTION_FEE_RATE
     net_amount = amount - fee
@@ -578,6 +508,7 @@ def calculate_investment(request):
 @api_view(['GET'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def investor_recovery_cases(request):
     """
     GET /api/investor/recovery-cases/
@@ -632,6 +563,7 @@ def investor_recovery_cases(request):
 @api_view(['GET'])
 @authentication_classes([SupabaseJWTAuthentication])
 @permission_classes([IsAuthenticated])
+@require_role('INVESTOR')
 def list_transactions(request):
     """GET /api/transactions/ — Transaction history for user."""
     transactions = Transaction.objects.filter(user_id=request.user.id)

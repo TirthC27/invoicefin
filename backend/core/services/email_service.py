@@ -113,7 +113,7 @@ class EmailService:
         It will never raise — all errors are caught and logged.
         """
         explorer_base = os.getenv(
-            "BLOCK_EXPLORER_URL", "https://sepolia.etherscan.io/"
+            "BLOCK_EXPLORER_URL", "https://amoy.polygonscan.com/"
         )
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 

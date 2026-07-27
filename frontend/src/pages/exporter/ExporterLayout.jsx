@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Routes, Route, NavLink, useNavigate, Navigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import {
   LayoutDashboard, Upload, FileText,
-  LogOut, Bell, ChevronLeft, Menu
+  LogOut, ChevronLeft, Menu
 } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import ExporterDashboard from './ExporterDashboard';
 import UploadInvoice from './UploadInvoice';
 import InvoicesPage from './InvoicesPage';
@@ -112,9 +113,11 @@ export default function ExporterLayout() {
           <div className="ex-topbar">
             <div style={{ fontSize: 15, fontWeight: 600 }}>Exporter Dashboard</div>
             <div className="ex-topbar-actions">
-              <button className="ex-topbar-btn" style={{ padding: '0 10px' }}>
-                <Bell size={18} />
-              </button>
+              <NotificationBell
+                buttonClassName="ex-topbar-btn"
+                buttonStyle={{ padding: '0 10px' }}
+                accent="#F59E0B"
+              />
             </div>
           </div>
           <div className="ex-page">

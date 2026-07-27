@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { investorApi } from '../../lib/api';
-import { useWallet } from '../../context/WalletContext';
-import { investInPool } from '../../lib/contractService';
+import { useWallet } from '../../context/useWallet';
+import { formatWalletError, investInPool } from '../../lib/contractService';
 import { ArrowLeft, TrendingUp, Clock, Users, Shield, Percent, CheckCircle2, Loader2 } from 'lucide-react';
 
 const POLL_INTERVAL = 10000;
@@ -41,6 +41,7 @@ export default function PoolDetailPage() {
 
   // Debounced server-side calculation
   useEffect(() => {
+    setError('');
     if (!amount || Number(amount) <= 0 || !pool) {
       setCalcData(null);
       return;
@@ -53,7 +54,11 @@ export default function PoolDetailPage() {
         setCalcData(data);
       } catch (err) {
         setCalcData(null);
-        if (err?.error) setError(err.error);
+        if (err?.status === 401 || err?.status === 403) {
+          setError('Your session is not authorized. Please sign in again.');
+        } else if (err?.error) {
+          setError(err.error);
+        }
       }
       setCalcLoading(false);
     }, 400);
@@ -61,7 +66,7 @@ export default function PoolDetailPage() {
   }, [amount, pool]);
 
   const handleInvest = async () => {
-    if (!amount || Number(amount) <= 0) return;
+    if (!amount || Number(amount) <= 0 || !calcData || !pool?.is_investable) return;
     setStep('pending');
     setError('');
     try {
@@ -70,26 +75,22 @@ export default function PoolDetailPage() {
       setStep('confirming');
       const receipt = await result.wait();
       if (receipt.status === 'confirmed') {
-        setStep('success');
-        // Backend verification (fire-and-forget)
+        setStep('confirming');
         try {
-          const { supabase } = await import('../../lib/supabaseClient');
-          const { data: { session } } = await supabase.auth.getSession();
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-          await fetch(`${API_BASE}/api/investments/verify/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}) },
-            body: JSON.stringify({ tx_hash: result.txHash }),
-          });
-        } catch (e) { console.error('Backend verify failed:', e); }
-        fetchPool();
+          await investorApi.verifyInvestment(result.txHash);
+          setStep('success');
+          fetchPool();
+        } catch (e) {
+          setStep('error');
+          setError(e?.error || e?.message || 'Backend verification failed. Your wallet transaction was confirmed, but the portfolio update was rejected.');
+        }
       } else {
         setStep('error');
         setError('Transaction reverted on-chain.');
       }
     } catch (err) {
       setStep('error');
-      setError(err?.info?.error?.message || err?.message || 'Transaction failed');
+      setError(formatWalletError(err));
     }
   };
 
@@ -98,6 +99,7 @@ export default function PoolDetailPage() {
 
   const filled = pool.percent_filled || 0;
   const remaining = Number(pool.remaining_size || 0);
+  const isInvestable = Boolean(pool.is_investable) && !pool.is_settled && pool.status === 'open' && remaining > 0;
 
   return (
     <>
@@ -202,16 +204,16 @@ export default function PoolDetailPage() {
         {/* Right: Invest CTA */}
         <div className="pd-card">
           <div className="pd-card-title">Invest in This Pool</div>
-          {pool.is_settled ? (
+          {!isInvestable && pool.is_settled ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
               <CheckCircle2 size={32} style={{ marginBottom: 12, color: '#22C55E' }} />
               <p style={{ fontSize: 14, fontWeight: 600 }}>This pool has been settled.</p>
               <p style={{ fontSize: 13 }}>Returns have been distributed to investors.</p>
             </div>
-          ) : filled >= 100 ? (
+          ) : !isInvestable ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
               <Shield size={32} style={{ marginBottom: 12, color: '#7C5CFC' }} />
-              <p style={{ fontSize: 14, fontWeight: 600 }}>Fully funded</p>
+              <p style={{ fontSize: 14, fontWeight: 600 }}>{filled >= 100 ? 'Fully funded' : 'Not accepting investments'}</p>
               <p style={{ fontSize: 13 }}>This pool is no longer accepting investments.</p>
             </div>
           ) : (
@@ -221,7 +223,7 @@ export default function PoolDetailPage() {
                 <div style={{ fontSize: 12, color: '#A0A0A8' }}>Est. ROI: {pool.roi}% over {pool.duration_days} days</div>
               </div>
               <button className="pd-invest-btn" onClick={() => setShowInvest(true)}
-                disabled={!wallet?.isConnected}>
+                disabled={!wallet?.isConnected || !isInvestable}>
                 {wallet?.isConnected ? 'Invest Now' : 'Connect Wallet to Invest'}
               </button>
               {!wallet?.isConnected && (
@@ -230,6 +232,7 @@ export default function PoolDetailPage() {
                   Connect Wallet
                 </button>
               )}
+              {wallet?.walletError && <div style={{ color: '#EF4444', fontSize: 12, marginTop: 10 }}>{wallet.walletError}</div>}
             </>
           )}
         </div>
@@ -261,7 +264,7 @@ export default function PoolDetailPage() {
                 {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{error}</div>}
 
                 <button className="pd-invest-btn" style={{ marginTop: 16 }} onClick={handleInvest}
-                  disabled={!amount || Number(amount) <= 0 || Number(amount) > remaining}>
+                  disabled={!amount || Number(amount) <= 0 || Number(amount) > remaining || calcLoading || !calcData || !isInvestable}>
                   Confirm Investment
                 </button>
               </>

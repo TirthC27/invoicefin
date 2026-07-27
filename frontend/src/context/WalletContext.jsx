@@ -1,10 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserProvider } from 'ethers';
 import { POLYGON_AMOY } from '../lib/networkConfig';
+import { WalletContext } from './walletContextValue';
 
 /* ── Context ─────────────────────────────────────────────── */
-const WalletContext = createContext(null);
-export const useWallet = () => useContext(WalletContext);
 
 const LS_KEY = 'Invoicefi_wallet_connected';
 
@@ -24,6 +23,7 @@ export function WalletProvider({ children }) {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected | connecting | connected | wrong_network
+  const [walletError, setWalletError] = useState(null);
   const reconnecting = useRef(false);
 
   /* ── Switch to Polygon Amoy ──────────────────────────── */
@@ -74,10 +74,11 @@ export function WalletProvider({ children }) {
   const connectWallet = useCallback(async () => {
     const providerObj = getMetaMaskProvider();
     if (!providerObj) {
-      alert('MetaMask extension is required to interact with the blockchain. Please install MetaMask and try again.');
+      setWalletError('MetaMask extension is required to interact with the blockchain. Please install MetaMask and try again.');
       return;
     }
 
+    setWalletError(null);
     setConnectionStatus('connecting');
 
     try {
@@ -88,6 +89,7 @@ export function WalletProvider({ children }) {
 
       if (!accounts || accounts.length === 0) {
         setConnectionStatus('disconnected');
+    setWalletError(null);
         return;
       }
 
@@ -108,9 +110,12 @@ export function WalletProvider({ children }) {
           await setupProviderAndSigner();
           setWalletAddress(address);
           setConnectionStatus('connected');
-        } catch {
+        } catch (switchErr) {
           setWalletAddress(address);
           setConnectionStatus('wrong_network');
+          setWalletError(switchErr?.code === 4001
+            ? 'Network switch was rejected in MetaMask.'
+            : 'Wrong network. Please switch MetaMask to Polygon Amoy.');
         }
       } else {
         setWalletAddress(address);
@@ -121,6 +126,9 @@ export function WalletProvider({ children }) {
       localStorage.removeItem(LS_KEY + '_mock');
     } catch (err) {
       console.error('Wallet connect error:', err);
+      setWalletError(err?.code === 4001
+        ? 'Wallet connection was rejected in MetaMask.'
+        : 'Unable to connect wallet. Check MetaMask and your Polygon Amoy RPC.');
       setConnectionStatus('disconnected');
     }
   }, [setupProviderAndSigner, switchToPolygonAmoy]);
@@ -181,7 +189,6 @@ export function WalletProvider({ children }) {
   useEffect(() => {
     if (reconnecting.current) return;
     const wasConnected = localStorage.getItem(LS_KEY);
-    const wasMock = localStorage.getItem(LS_KEY + '_mock') === 'true';
 
     if (wasConnected) {
       const providerObj = getMetaMaskProvider();
@@ -214,6 +221,7 @@ export function WalletProvider({ children }) {
     provider,
     signer,
     connectionStatus,
+    walletError,
     connectWallet,
     disconnectWallet,
     switchToPolygonAmoy,

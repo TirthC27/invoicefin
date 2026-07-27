@@ -4,14 +4,20 @@ from .models import Pool, Investment, Transaction, Portfolio, Invoice, InvoicePo
 
 class PoolSerializer(serializers.ModelSerializer):
     percent_filled = serializers.SerializerMethodField()
+    is_investable = serializers.BooleanField(read_only=True)
+    invoice_id = serializers.IntegerField(source='invoice.id', read_only=True)
+    exporter_email = serializers.EmailField(source='exporter.email', read_only=True, default=None)
 
     class Meta:
         model = Pool
         fields = [
             'id', 'name', 'apy', 'duration_days',
             'total_size', 'remaining_size',
-            'contract_pool_id', 'is_settled',
-            'percent_filled', 'created_at',
+            'contract_pool_id', 'is_settled', 'status',
+            'invoice_id', 'invoice_number', 'buyer_name', 'buyer_company',
+            'currency', 'due_date', 'funding_deadline',
+            'min_investment', 'max_investment', 'risk_score',
+            'exporter_email', 'percent_filled', 'is_investable', 'created_at',
         ]
 
     def get_percent_filled(self, obj):
@@ -24,6 +30,9 @@ class PoolSerializer(serializers.ModelSerializer):
 class PoolDetailSerializer(serializers.ModelSerializer):
     """Extended pool serializer with investor-facing computed fields."""
     percent_filled = serializers.SerializerMethodField()
+    is_investable = serializers.BooleanField(read_only=True)
+    invoice_id = serializers.IntegerField(source='invoice.id', read_only=True)
+    exporter_email = serializers.EmailField(source='exporter.email', read_only=True, default=None)
     roi = serializers.SerializerMethodField()
     days_remaining = serializers.SerializerMethodField()
     investor_count = serializers.SerializerMethodField()
@@ -33,9 +42,12 @@ class PoolDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'apy', 'duration_days',
             'total_size', 'remaining_size',
-            'contract_pool_id', 'is_settled',
-            'percent_filled', 'roi', 'days_remaining',
-            'investor_count', 'created_at',
+            'contract_pool_id', 'is_settled', 'status',
+            'invoice_id', 'invoice_number', 'buyer_name', 'buyer_company',
+            'currency', 'due_date', 'funding_deadline',
+            'min_investment', 'max_investment', 'risk_score',
+            'exporter_email', 'percent_filled', 'roi', 'days_remaining',
+            'investor_count', 'is_investable', 'created_at',
         ]
 
     def get_percent_filled(self, obj):
@@ -81,18 +93,6 @@ class InvestmentSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'confirmed_at']
 
 
-class InvestmentInitiateSerializer(serializers.Serializer):
-    wallet_address = serializers.CharField(max_length=42)
-    pool_id = serializers.IntegerField(help_text="contract_pool_id from Pool model")
-    amount = serializers.DecimalField(max_digits=20, decimal_places=8)
-    tx_hash = serializers.CharField(max_length=66)
-
-
-class InvestmentConfirmSerializer(serializers.Serializer):
-    tx_hash = serializers.CharField(max_length=66)
-    block_number = serializers.IntegerField()
-
-
 class TransactionSerializer(serializers.ModelSerializer):
     pool_name = serializers.CharField(source='pool.name', read_only=True, default=None)
 
@@ -121,12 +121,15 @@ class PortfolioSerializer(serializers.ModelSerializer):
 
 # ── Exporter Invoice Lifecycle ───────────────────────────────
 class InvoicePoolSerializer(serializers.ModelSerializer):
-    percent_funded = serializers.FloatField(source='percent_funded', read_only=True)
+    percent_funded = serializers.FloatField(read_only=True)
+    investment_pool_id = serializers.IntegerField(source='investment_pool.id', read_only=True)
+    contract_pool_id = serializers.IntegerField(source='investment_pool.contract_pool_id', read_only=True)
 
     class Meta:
         model = InvoicePool
         fields = [
-            'id', 'pool_size', 'expected_roi', 'funding_deadline',
+            'id', 'investment_pool_id', 'contract_pool_id',
+            'pool_size', 'expected_roi', 'funding_deadline',
             'min_investment', 'max_investment', 'amount_funded',
             'is_visible_to_investors', 'status', 'percent_funded',
             'created_at', 'updated_at',

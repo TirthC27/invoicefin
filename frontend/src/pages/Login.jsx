@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { useWallet } from '../context/WalletContext';
+import { useWallet } from '../context/useWallet';
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 /* ─────────────────────────────────────────────────────────────
    SVG ICONS (inline — zero extra dependencies)
@@ -178,7 +178,7 @@ export default function Login() {
   /* ── Wallet context ── */
   const { connectWallet, connectionStatus, truncatedAddress } = useWallet();
 
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, backendAuthError } = useAuth();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -526,7 +526,7 @@ export default function Login() {
               <p className="lp-auth-subtitle">Continue managing your invoice investments.</p>
 
               {/* Error display (existing) */}
-              {error && <div className="lp-error">{error}</div>}
+              {(error || backendAuthError) && <div className="lp-error">{error || backendAuthError}</div>}
 
               {/* ── AUTH FORM (all existing logic preserved) ── */}
               <form onSubmit={handleLogin}>

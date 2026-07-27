@@ -2,6 +2,13 @@ from django.db import models
 
 # ── Pool ─────────────────────────────────────────────────
 class Pool(models.Model):
+    STATUS_CHOICES = [
+        ('open',         'Open'),
+        ('fully_funded', 'Fully Funded'),
+        ('settled',      'Settled'),
+        ('closed',       'Closed'),
+    ]
+
     name = models.CharField(max_length=200)
     apy = models.DecimalField(max_digits=6, decimal_places=2, help_text="APY percentage e.g. 14.20")
     duration_days = models.IntegerField()
@@ -9,10 +16,34 @@ class Pool(models.Model):
     remaining_size = models.DecimalField(max_digits=20, decimal_places=8, help_text="Remaining capacity in MATIC")
     contract_pool_id = models.IntegerField(unique=True, help_text="Pool ID on the smart contract")
     is_settled = models.BooleanField(default=False)
+    exporter = models.ForeignKey('AppUser', null=True, blank=True, on_delete=models.SET_NULL, related_name='investment_pools')
+    invoice = models.OneToOneField('Invoice', null=True, blank=True, on_delete=models.SET_NULL, related_name='investment_pool')
+    invoice_number = models.CharField(max_length=100, blank=True, default='')
+    buyer_name = models.CharField(max_length=200, blank=True, default='')
+    buyer_company = models.CharField(max_length=300, blank=True, default='')
+    currency = models.CharField(max_length=5, blank=True, default='MATIC')
+    due_date = models.DateField(null=True, blank=True)
+    funding_deadline = models.DateField(null=True, blank=True)
+    min_investment = models.DecimalField(max_digits=20, decimal_places=8, default=0)
+    max_investment = models.DecimalField(max_digits=20, decimal_places=8, default=0)
+    risk_score = models.IntegerField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Pool #{self.contract_pool_id}: {self.name} ({self.apy}% APY)"
+
+    @property
+    def is_investable(self):
+        """
+        A pool is investable when: not settled, status is 'open', and has remaining capacity.
+        Uses both is_settled flag AND status field for consistency.
+        """
+        return (
+            not self.is_settled
+            and self.status == 'open'
+            and self.remaining_size > 0
+        )
 
     class Meta:
         ordering = ['-created_at']
@@ -342,6 +373,11 @@ class InvoicePool(models.Model):
 
     invoice          = models.OneToOneField(
         Invoice, on_delete=models.CASCADE, related_name='pool',
+    )
+    investment_pool  = models.OneToOneField(
+        Pool, on_delete=models.CASCADE, related_name='invoice_pool_metadata',
+        null=True, blank=True,
+        help_text="Unified investor-facing pool row linked to this invoice pool",
     )
     pool_size        = models.DecimalField(max_digits=20, decimal_places=2)
     expected_roi     = models.DecimalField(max_digits=6, decimal_places=2,

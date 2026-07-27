@@ -1,10 +1,33 @@
-import { Contract, parseEther, formatEther } from 'ethers';
-import { CONTRACT_ADDRESS, INVOICE_POOL_ABI } from './networkConfig';
+import { Contract, parseEther, formatEther, isAddress } from 'ethers';
+import { CONTRACT_ADDRESS, INVOICE_POOL_ABI, isContractConfigured } from './networkConfig';
 
 /* ── Get contract instance ───────────────────────────────── */
 
 export function getContract(signerOrProvider) {
+  if (!isContractConfigured() || !isAddress(CONTRACT_ADDRESS)) {
+    throw new Error('Contract is not configured. Set VITE_CONTRACT_ADDRESS to the deployed InvoicePool address.');
+  }
   return new Contract(CONTRACT_ADDRESS, INVOICE_POOL_ABI, signerOrProvider);
+}
+
+export function formatWalletError(err) {
+  const message = err?.shortMessage || err?.info?.error?.message || err?.reason || err?.message || '';
+  if (err?.code === 4001 || /user rejected/i.test(message)) {
+    return 'Transaction was rejected in MetaMask.';
+  }
+  if (/network|chain/i.test(message)) {
+    return 'Wrong network. Please switch MetaMask to Polygon Amoy.';
+  }
+  if (/could not coalesce|failed to fetch|network error|rpc|unavailable/i.test(message)) {
+    return 'Polygon Amoy RPC is unavailable. Try another RPC in MetaMask or retry shortly.';
+  }
+  if (/revert|execution reverted|call exception/i.test(message)) {
+    return 'Transaction reverted on-chain.';
+  }
+  if (/contract is not configured/i.test(message)) {
+    return message;
+  }
+  return message || 'Transaction failed.';
 }
 
 /* ── Read all pools ──────────────────────────────────────── */
@@ -68,5 +91,28 @@ export async function getMyInvestment(provider, poolId, investorAddress) {
     amount: formatEther(amount),
     amountWei: amount,
     claimed,
+  };
+}
+
+/* -- Settlement / payout helpers ----------------------------------------- */
+
+export async function settlePool(signer, poolId, settlementFunding = '0') {
+  const contract = getContract(signer);
+  const tx = await contract.settlePool(poolId, { value: parseEther(settlementFunding.toString()) });
+  return tx.wait();
+}
+
+export async function claimPayout(signer, poolId) {
+  const contract = getContract(signer);
+  const tx = await contract.claimPayout(poolId);
+  return tx.wait();
+}
+
+export async function getClaimableAmount(provider, poolId, investorAddress) {
+  const contract = getContract(provider);
+  const amount = await contract.getClaimableAmount(poolId, investorAddress);
+  return {
+    amount: formatEther(amount),
+    amountWei: amount,
   };
 }

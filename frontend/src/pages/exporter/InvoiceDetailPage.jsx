@@ -15,7 +15,8 @@ import {
   Activity, TrendingUp, Plus, AlertCircle,
 } from 'lucide-react';
 import { exporterApi } from '../../lib/api';
-import { STATUS_COLOR, useCountdown, fmtAmount, timeAgo, StatusBadge } from './exporterUtils';
+import { useCountdown, fmtAmount, timeAgo } from './exporterUtils';
+import StatusBadge from './StatusBadge';
 import CreatePoolModal from './CreatePoolModal';
 
 function CopyHash({ hash }) {
@@ -159,8 +160,6 @@ export default function InvoiceDetailPage() {
 
   const hasPool    = !!invoice.pool;
   const isCountable = ['Funded', 'Active'].includes(invoice.status);
-  const color      = STATUS_COLOR[invoice.status] || '#A0A0A8';
-
   return (
     <div style={{ color: '#fff', fontFamily: "'Inter',sans-serif" }}>
       {/* Toast */}
