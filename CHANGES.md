@@ -1,3 +1,25 @@
+# 2026-07-28 — Post-Audit Fix Pass
+
+## Fixed
+
+- Rebuilt `frontend/src/pages/exporter/ExporterDashboard.jsx` as a clean, self-contained dashboard so the exporter portal no longer crashes on undefined merged-state symbols.
+- Added ESLint ignore coverage for `.history/` and removed the tracked `.history` tree from Git index.
+- Fixed `frontend/vite.config.js` so it accepts either `VITE_ALCHEMY_RPC_URL` or `VITE_POLYGON_AMOY_RPC_URL` and no longer fails lint on `process` in the Vite config file.
+- Changed backend startup to require `DJANGO_SECRET_KEY` explicitly in `backend/invoicefin_backend/settings.py` instead of silently falling back to a local dev secret.
+- Aligned backend and frontend environment templates with the variables the code now reads, including `CONTRACT_OWNER_PRIVATE_KEY`, `POLYGON_AMOY_CHAIN_ID`, `INVOICEFIN_BACKGROUND_JOBS`, `CORS_ALLOW_ALL_ORIGINS`, `DJANGO_LOG_LEVEL`, and the Polygon Amoy RPC variables.
+- Updated `backend/Dockerfile` so build-time collectstatic uses `DJANGO_SECRET_KEY`.
+
+## Verified
+
+- `npm run lint` passes in `frontend`.
+- `python manage.py check` passes in `backend`.
+- `python manage.py makemigrations --check --dry-run` reports no changes.
+
+## Still needs human action
+
+- Rotate real credentials that are already present in the checked-in `.env` files and any historical `.history` files.
+- Decide whether the repository history should be rewritten to remove previously committed secret material. The current fix pass only untracked the history files going forward.
+
 # InvoiceFin End-to-End Fix Log
 
 ## Summary

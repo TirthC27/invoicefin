@@ -1,5 +1,32 @@
-import { Contract, parseEther, formatEther, isAddress } from 'ethers';
-import { CONTRACT_ADDRESS, INVOICE_POOL_ABI, isContractConfigured } from './networkConfig';
+import { Contract, JsonRpcProvider, parseEther, formatEther, isAddress } from 'ethers';
+import { CONTRACT_ADDRESS, INVOICE_POOL_ABI, POLYGON_AMOY, isContractConfigured } from './networkConfig';
+
+const WALLET_INTERACTION_TIMEOUT_MS = 45000;
+const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 120000;
+
+let dedicatedProvider = null;
+
+const getDedicatedProvider = () => {
+  if (dedicatedProvider) return dedicatedProvider;
+  const rpcUrl = POLYGON_AMOY.rpcUrls[0];
+  if (!rpcUrl) return null;
+
+  dedicatedProvider = new JsonRpcProvider(rpcUrl, {
+    chainId: POLYGON_AMOY.chainIdDecimal,
+    name: POLYGON_AMOY.chainName,
+  });
+  dedicatedProvider.pollingInterval = 15000;
+  return dedicatedProvider;
+};
+
+const withTimeout = (promise, ms, message) => {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
 
 /* ── Get contract instance ───────────────────────────────── */
 
@@ -64,17 +91,26 @@ export async function fetchPools(provider) {
 /* ── Invest in a pool ────────────────────────────────────── */
 
 export async function investInPool(signer, poolId, amountInMatic) {
+  const walletProvider = signer?.provider;
+  const provider = getDedicatedProvider();
+  if (!walletProvider) {
+    throw new Error('Wallet provider is not available. Please reconnect MetaMask and try again.');
+  }
+  if (!provider) {
+    throw new Error('Blockchain RPC provider is not available. Please try again in a moment.');
+  }
+
   const value = parseEther(amountInMatic.toString());
 
-  // Use dedicated provider to build the transaction (avoids Metamask eth_blockNumber rate limit)
-  const readContract = getContract(dedicatedProvider);
+  // Build the transaction with the dedicated RPC provider, then sign it in MetaMask.
+  const readContract = getContract(provider);
   const txData = await readContract.invest.populateTransaction(poolId, { value });
   
-  // Get fee data from the dedicated provider
-  const feeData = await dedicatedProvider.getFeeData();
+  // Get fee data from the dedicated provider.
+  const feeData = await provider.getFeeData();
   
-  // Estimate gas using dedicated provider
-  const gasEstimate = await dedicatedProvider.estimateGas({
+  // Estimate gas using the dedicated provider.
+  const gasEstimate = await provider.estimateGas({
     ...txData,
     from: await signer.getAddress()
   });
@@ -97,7 +133,7 @@ export async function investInPool(signer, poolId, amountInMatic) {
   return {
     txHash: tx.hash,
     wait: async () => {
-      const receipt = await dedicatedProvider.waitForTransaction(
+      const receipt = await provider.waitForTransaction(
         tx.hash,
         1,
         TRANSACTION_CONFIRMATION_TIMEOUT_MS

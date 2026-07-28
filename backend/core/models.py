@@ -49,7 +49,7 @@ class Pool(models.Model):
         ordering = ['-created_at']
 
 
-class Invoice(models.Model):
+class LegacyInvoice(models.Model):
     STATUS_CHOICES = [
         ('UPLOADED', 'Uploaded'),
         ('VERIFIED', 'Verified'),
@@ -71,6 +71,7 @@ class Invoice(models.Model):
         return f"Invoice #{self.id} - {self.buyer_name} ({self.status})"
 
     class Meta:
+        abstract = True
         ordering = ['-created_at']
 
 

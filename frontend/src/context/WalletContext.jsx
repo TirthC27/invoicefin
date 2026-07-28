@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { BrowserProvider } from 'ethers';
+import { BrowserProvider, JsonRpcProvider } from 'ethers';
 import { POLYGON_AMOY } from '../lib/networkConfig';
+import { supabase } from '../lib/supabaseClient';
 import { WalletContext } from './walletContextValue';
 
 /* ── Context ─────────────────────────────────────────────── */
@@ -20,6 +21,11 @@ const getMetaMaskProvider = () => {
 let browserProviderInstance = null;
 let dedicatedHealthProvider = null;
 
+const DEDICATED_RPC_URL =
+  import.meta.env.VITE_ALCHEMY_RPC_URL ||
+  import.meta.env.VITE_POLYGON_AMOY_RPC_URL ||
+  POLYGON_AMOY.rpcUrls[0];
+
 const withTimeout = (promise, ms, message) => {
   let timeoutId;
   const timeout = new Promise((_, reject) => {
@@ -29,7 +35,25 @@ const withTimeout = (promise, ms, message) => {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
 };
 
+const saveWalletToProfile = async (walletAddress) => {
+  if (!walletAddress) return;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId) return;
+
+  const { error } = await supabase.from('profiles').upsert({
+    id: userId,
+    wallet_address: walletAddress,
+  }, { onConflict: 'id' });
+
+  if (error) {
+    console.warn('[Wallet] Could not save wallet address to profile:', error.message);
+  }
+};
+
 const getDedicatedHealthProvider = () => {
+  if (!DEDICATED_RPC_URL) return null;
   if (!dedicatedHealthProvider) {
     dedicatedHealthProvider = new JsonRpcProvider(DEDICATED_RPC_URL, {
       chainId: POLYGON_AMOY.chainIdDecimal,
@@ -48,6 +72,7 @@ export function WalletProvider({ children }) {
   const [signer, setSigner] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected | connecting | connected | wrong_network
   const [walletError, setWalletError] = useState(null);
+  const [walletRpcWarning, setWalletRpcWarning] = useState('');
   const reconnecting = useRef(false);
 
   const checkWalletRpcHealth = useCallback(async (bp, cid) => {
@@ -57,6 +82,10 @@ export function WalletProvider({ children }) {
     }
 
     const appProvider = getDedicatedHealthProvider();
+    if (!appProvider) {
+      setWalletRpcWarning('');
+      return;
+    }
     const [appBlock, walletBlock] = await Promise.allSettled([
       withTimeout(appProvider.getBlockNumber(), 8000, 'Dedicated Polygon Amoy RPC health check timed out.'),
       withTimeout(bp.getBlockNumber(), 8000, 'Wallet Polygon Amoy RPC health check timed out.'),
@@ -184,6 +213,7 @@ export function WalletProvider({ children }) {
           // Re-read after switch
           await setupProviderAndSigner();
           setWalletAddress(address);
+          await saveWalletToProfile(address);
           setConnectionStatus('connected');
         } catch (switchErr) {
           setWalletAddress(address);
@@ -194,6 +224,7 @@ export function WalletProvider({ children }) {
         }
       } else {
         setWalletAddress(address);
+        await saveWalletToProfile(address);
         setConnectionStatus('connected');
       }
 
@@ -201,9 +232,10 @@ export function WalletProvider({ children }) {
       localStorage.removeItem(LS_KEY + '_mock');
     } catch (err) {
       console.error('Wallet connect error:', err);
+      const message = err?.shortMessage || err?.message;
       setWalletError(err?.code === 4001
         ? 'Wallet connection was rejected in MetaMask.'
-        : 'Unable to connect wallet. Check MetaMask and your Polygon Amoy RPC.');
+        : message || 'Unable to connect wallet. Check MetaMask and your Polygon Amoy RPC.');
       setConnectionStatus('disconnected');
     }
   }, [setupProviderAndSigner, switchToPolygonAmoy]);
@@ -230,6 +262,7 @@ export function WalletProvider({ children }) {
         disconnectWallet();
       } else {
         setWalletAddress(accounts[0]);
+        await saveWalletToProfile(accounts[0]);
         await setupProviderAndSigner();
       }
     };
@@ -274,6 +307,7 @@ export function WalletProvider({ children }) {
           .then(async (accounts) => {
             if (accounts && accounts.length > 0) {
               setWalletAddress(accounts[0]);
+              await saveWalletToProfile(accounts[0]);
               const result = await setupProviderAndSigner();
               if (result && result.chainId === POLYGON_AMOY.chainIdDecimal) {
                 setConnectionStatus('connected');

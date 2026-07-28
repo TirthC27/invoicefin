@@ -160,7 +160,6 @@ export default function Signup() {
   const navigate = useNavigate();
 
   /* ── New UI-only state ── */
-  const [role, setRole] = useState('INVESTOR');
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
 

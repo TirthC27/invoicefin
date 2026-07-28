@@ -17,7 +17,7 @@ RUN pip install --upgrade pip \
 COPY . .
 
 RUN chmod +x /app/docker-entrypoint.sh \
-    && SECRET_KEY=build-time-collectstatic-key \
+    && DJANGO_SECRET_KEY=build-time-collectstatic-key \
        DEBUG=False \
        ALLOWED_HOSTS=localhost \
        DATABASE_URL=sqlite:////tmp/collectstatic.sqlite3 \
