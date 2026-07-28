@@ -14,9 +14,9 @@ class PoolAdmin(admin.ModelAdmin):
 
 @admin.register(Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    list_display = ['id', 'buyer_name', 'exporter', 'invoice_amount', 'due_date', 'status', 'pool', 'created_at']
-    list_filter = ['status', 'buyer_country']
-    search_fields = ['buyer_name', 'buyer_email', 'exporter__email']
+    list_display = ['id', 'invoice_number', 'buyer_name', 'buyer_company', 'amount', 'due_date', 'status', 'created_at']
+    list_filter = ['status', 'currency', 'country']
+    search_fields = ['invoice_number', 'buyer_name', 'buyer_company', 'exporter__email']
 
 
 @admin.register(Investment)

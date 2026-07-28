@@ -74,6 +74,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='pool',
             name='status',
-            field=models.CharField(default='open', max_length=20),
+            field=models.CharField(choices=[('open', 'Open'), ('fully_funded', 'Fully Funded'), ('settled', 'Settled'), ('closed', 'Closed')], default='open', max_length=20),
         ),
     ]

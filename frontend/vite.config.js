@@ -5,9 +5,10 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
+  const rpcUrl = env.VITE_ALCHEMY_RPC_URL?.trim() || env.VITE_POLYGON_AMOY_RPC_URL?.trim()
 
-  if (!env.VITE_ALCHEMY_RPC_URL?.trim()) {
-    throw new Error('Missing VITE_ALCHEMY_RPC_URL - set this in frontend/.env')
+  if (!rpcUrl) {
+    throw new Error('Missing VITE_ALCHEMY_RPC_URL or VITE_POLYGON_AMOY_RPC_URL - set one in frontend/.env')
   }
 
   return {

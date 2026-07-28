@@ -10,6 +10,7 @@ export const POLYGON_AMOY = {
     decimals: 18,
   },
   rpcUrls: [
+    import.meta.env.VITE_ALCHEMY_RPC_URL,
     import.meta.env.VITE_POLYGON_AMOY_RPC_URL,
     'https://polygon-amoy.drpc.org',
     'https://rpc-amoy.polygon.technology',

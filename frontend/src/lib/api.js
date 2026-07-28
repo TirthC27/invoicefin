@@ -94,6 +94,7 @@ export const exporterApi = {
   listInvoices: (params = {}) => apiRequest('GET',
     '/exporter/invoices/list/?' + new URLSearchParams(params).toString()),
   getInvoice: (id) => apiRequest('GET', `/exporter/invoices/${id}/`),
+  verifyInvoice: (id) => apiRequest('PATCH', `/exporter/invoices/${id}/status/`, { status: 'Verified' }),
   createPool: (id, data) => apiRequest('POST', `/exporter/invoices/${id}/pool/`, data),
   updateStatus: (id, status) => apiRequest('PATCH', `/exporter/invoices/${id}/status/`, { status }),
   matureInvoice: (id) => apiRequest('PATCH', `/exporter/invoices/${id}/mature/`),
