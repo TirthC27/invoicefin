@@ -49,6 +49,28 @@ CREATE_POOL_FUNCTION_ABI = {
 
 CONTRACT_ABI = [INVESTED_EVENT_ABI, POOL_CREATED_EVENT_ABI, CREATE_POOL_FUNCTION_ABI]
 
+POOL_WRITE_ABI = [
+    {
+        "inputs": [
+            {"name": "_name", "type": "string"},
+            {"name": "_apyBps", "type": "uint256"},
+            {"name": "_durationDays", "type": "uint256"},
+            {"name": "_totalSize", "type": "uint256"},
+        ],
+        "name": "createPool",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "poolCount",
+        "outputs": [{"type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+]
+
 
 @dataclass
 class VerifiedInvestment:

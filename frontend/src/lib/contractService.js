@@ -64,16 +64,50 @@ export async function fetchPools(provider) {
 /* ── Invest in a pool ────────────────────────────────────── */
 
 export async function investInPool(signer, poolId, amountInMatic) {
-  const contract = getContract(signer);
   const value = parseEther(amountInMatic.toString());
 
-  // Call the payable invest function
-  const tx = await contract.invest(poolId, { value });
+  // Use dedicated provider to build the transaction (avoids Metamask eth_blockNumber rate limit)
+  const readContract = getContract(dedicatedProvider);
+  const txData = await readContract.invest.populateTransaction(poolId, { value });
+  
+  // Get fee data from the dedicated provider
+  const feeData = await dedicatedProvider.getFeeData();
+  
+  // Estimate gas using dedicated provider
+  const gasEstimate = await dedicatedProvider.estimateGas({
+    ...txData,
+    from: await signer.getAddress()
+  });
+
+  // Construct the final transaction to send to the wallet for signing only
+  const txReq = {
+    ...txData,
+    gasLimit: (gasEstimate * 120n) / 100n, // Add 20% buffer
+    maxFeePerGas: feeData.maxFeePerGas,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+  };
+
+  const tx = await withTimeout(
+    signer.sendTransaction(txReq),
+    WALLET_INTERACTION_TIMEOUT_MS,
+    'WALLET_INTERACTION_TIMEOUT',
+    "Your wallet isn't responding."
+  );
 
   return {
     txHash: tx.hash,
     wait: async () => {
-      const receipt = await tx.wait();
+      const receipt = await dedicatedProvider.waitForTransaction(
+        tx.hash,
+        1,
+        TRANSACTION_CONFIRMATION_TIMEOUT_MS
+      );
+      if (!receipt) {
+        const timeoutError = new Error('Transaction confirmation timed out.');
+        timeoutError.code = 'TRANSACTION_CONFIRMATION_TIMEOUT';
+        timeoutError.txHash = tx.hash;
+        throw timeoutError;
+      }
       return {
         blockNumber: receipt.blockNumber,
         status: receipt.status === 1 ? 'confirmed' : 'failed',

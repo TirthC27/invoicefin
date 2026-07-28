@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Pool, Investment, Transaction, Portfolio, EmailLog,
+    Pool, Invoice, Investment, Transaction, Portfolio, EmailLog,
     AppUser, LawFirm, RecoveryCase, RecoveryEvent, Notification,
 )
 
@@ -10,6 +10,13 @@ class PoolAdmin(admin.ModelAdmin):
     list_display = ['contract_pool_id', 'name', 'apy', 'duration_days', 'total_size', 'remaining_size', 'is_settled', 'created_at']
     list_filter = ['is_settled']
     search_fields = ['name']
+
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ['id', 'buyer_name', 'exporter', 'invoice_amount', 'due_date', 'status', 'pool', 'created_at']
+    list_filter = ['status', 'buyer_country']
+    search_fields = ['buyer_name', 'buyer_email', 'exporter__email']
 
 
 @admin.register(Investment)
@@ -105,4 +112,3 @@ class NotificationAdmin(admin.ModelAdmin):
     def message_short(self, obj):
         return obj.message[:60] + ('...' if len(obj.message) > 60 else '')
     message_short.short_description = "Message"
-

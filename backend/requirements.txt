@@ -17,3 +17,9 @@ requests>=2.32,<3.0
 # Blockchain (Polygon Amoy on-chain verification)
 # web3 pulls in its own eth-* dependencies automatically
 web3>=7.0,<8.0
+
+# Deployment additions
+gunicorn==26.0.0
+psycopg2-binary==2.9.12
+dj-database-url==3.1.2
+whitenoise==6.12.0

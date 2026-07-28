@@ -28,6 +28,53 @@ function DonutChart({ data }) {
     };
   }, { offset: 25, items: [] }).items;
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    try {
+      await exporterApi.uploadInvoice(form);
+      setForm(emptyInvoice);
+      await loadInvoices();
+    } catch (err) {
+      setError(getErrorMessage(err, 'Invoice upload failed.'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const verifyInvoice = async (id) => {
+    setError('');
+    try {
+      const updated = await exporterApi.verifyInvoice(id);
+      setInvoices((items) => items.map((item) => (item.id === id ? updated : item)));
+    } catch (err) {
+      setError(getErrorMessage(err, 'Invoice verification failed.'));
+    }
+  };
+
+  const createPool = async (invoice) => {
+    const values = poolInputs[invoice.id] || {};
+    setError('');
+    try {
+      const updated = await exporterApi.createPool(invoice.id, {
+        name: values.name || `${invoice.buyer_name} Invoice #${invoice.id}`,
+        apy: values.apy || '14.00',
+        duration_days: Number(values.duration_days || 90),
+      });
+      setInvoices((items) => items.map((item) => (item.id === invoice.id ? updated : item)));
+    } catch (err) {
+      setError(getErrorMessage(err, 'Pool creation failed.'));
+    }
+  };
+
+  const updatePoolInput = (id, key, value) => {
+    setPoolInputs((current) => ({
+      ...current,
+      [id]: { ...(current[id] || {}), [key]: value },
+    }));
+  };
+
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', maxWidth: 180, display: 'block', margin: '0 auto' }}>
       {/* Background ring */}

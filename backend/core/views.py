@@ -16,6 +16,7 @@ from .authentication import SupabaseJWTAuthentication, require_role
 from .user_sync import sync_app_user_from_identity
 from .models import Pool, Investment, Transaction, Portfolio, RecoveryCase, RecoveryEvent
 from .serializers import (
+    CreateInvoicePoolSerializer, InvoiceSerializer,
     PoolSerializer, PoolDetailSerializer, InvestmentSerializer,
     TransactionSerializer, PortfolioSerializer,
 )
@@ -55,6 +56,22 @@ def get_user_me(request):
     app_user = sync_app_user_from_identity(identity, explicit_profile=bool(profile.get('role') or profile.get('status')))
     request.user.app_user = app_user
 
+    if request.user.app_user is None:
+        profile_role = profile.get('role') if profile else None
+        role = normalize_role(profile_role or request.user.role)
+        app_user, _ = AppUser.objects.update_or_create(
+            supabase_uid=request.user.id,
+            defaults={
+                'email': request.user.email,
+                'full_name': profile.get('full_name') if profile else '',
+                'role': role,
+                'status': 'ACTIVE',
+            },
+        )
+        request.user.app_user = app_user
+        request.user.role = app_user.role
+        request.user.status = app_user.status
+
     return Response({
         "id": request.user.id,
         "email": app_user.email if app_user else request.user.email,
@@ -63,6 +80,161 @@ def get_user_me(request):
         "full_name": app_user.full_name if app_user else identity['full_name'],
         "wallet_address": profile.get('wallet_address'),
     })
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def sync_user_role(request):
+    """
+    POST /api/auth/sync-user/
+    Creates or updates the local AppUser mirror after Supabase signup.
+    """
+    role = normalize_role(request.data.get('role'), default=None)
+    if role not in APP_ROLES:
+        return Response({"error": "Invalid role"}, status=400)
+
+    full_name = request.data.get('full_name', '') or ''
+    app_user, _ = AppUser.objects.update_or_create(
+        supabase_uid=request.user.id,
+        defaults={
+            'email': request.user.email,
+            'full_name': full_name,
+            'role': role,
+            'status': 'ACTIVE',
+        },
+    )
+    return Response({
+        "id": app_user.supabase_uid,
+        "email": app_user.email,
+        "full_name": app_user.full_name,
+        "role": app_user.role,
+        "status": app_user.status,
+    })
+
+
+# ═══════════════════════════════════════════════════════════
+# EXPORTER INVOICES
+# ═══════════════════════════════════════════════════════════
+
+def _get_or_create_app_user_for_request(user):
+    app_user = getattr(user, 'app_user', None)
+    if app_user:
+        return app_user
+    app_user, _ = AppUser.objects.update_or_create(
+        supabase_uid=user.id,
+        defaults={
+            'email': user.email,
+            'full_name': getattr(user, 'full_name', '') or '',
+            'role': user.role,
+            'status': getattr(user, 'status', 'ACTIVE'),
+        },
+    )
+    return app_user
+
+
+@api_view(['GET'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
+def list_exporter_invoices(request):
+    exporter = _get_or_create_app_user_for_request(request.user)
+    invoices = Invoice.objects.filter(exporter=exporter).select_related('pool')
+    return Response(InvoiceSerializer(invoices, many=True).data)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
+def upload_invoice(request):
+    serializer = InvoiceSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=400)
+
+    exporter = _get_or_create_app_user_for_request(request.user)
+    invoice = serializer.save(exporter=exporter, status='UPLOADED')
+    return Response(InvoiceSerializer(invoice).data, status=201)
+
+
+@api_view(['GET'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
+def get_invoice_detail(request, pk):
+    exporter = _get_or_create_app_user_for_request(request.user)
+    try:
+        invoice = Invoice.objects.select_related('pool').get(pk=pk, exporter=exporter)
+    except Invoice.DoesNotExist:
+        return Response({"error": "Invoice not found"}, status=404)
+    return Response(InvoiceSerializer(invoice).data)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
+def verify_invoice(request, pk):
+    exporter = _get_or_create_app_user_for_request(request.user)
+    try:
+        invoice = Invoice.objects.get(pk=pk, exporter=exporter)
+    except Invoice.DoesNotExist:
+        return Response({"error": "Invoice not found"}, status=404)
+
+    invoice.status = 'VERIFIED'
+    invoice.verified_at = timezone.now()
+    invoice.save(update_fields=['status', 'verified_at'])
+    return Response(InvoiceSerializer(invoice).data)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+@require_role('EXPORTER', 'ADMIN')
+def create_pool_from_invoice(request, pk):
+    exporter = _get_or_create_app_user_for_request(request.user)
+    try:
+        invoice = Invoice.objects.select_related('pool').get(pk=pk, exporter=exporter)
+    except Invoice.DoesNotExist:
+        return Response({"error": "Invoice not found"}, status=404)
+
+    if invoice.status != 'VERIFIED':
+        return Response({"error": "Invoice must be verified before creating a pool."}, status=400)
+    if invoice.pool_id:
+        return Response(InvoiceSerializer(invoice).data, status=200)
+
+    serializer = CreateInvoicePoolSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=400)
+
+    pool_name = serializer.validated_data.get('name') or f"{invoice.buyer_name} Invoice #{invoice.id}"
+    apy = serializer.validated_data['apy']
+    duration_days = serializer.validated_data['duration_days']
+    try:
+        from core.services.blockchain_service import create_pool_on_chain
+        created = create_pool_on_chain(
+            name=pool_name,
+            apy_bps=int(apy * Decimal('100')),
+            duration_days=duration_days,
+            total_size_matic=invoice.invoice_amount,
+        )
+    except Exception as e:
+        logger.error("On-chain pool creation failed for invoice %s: %s", invoice.id, e)
+        return Response({"error": f"On-chain pool creation failed: {e}"}, status=503)
+
+    pool = Pool.objects.create(
+        name=pool_name,
+        apy=apy,
+        duration_days=duration_days,
+        total_size=invoice.invoice_amount,
+        remaining_size=invoice.invoice_amount,
+        contract_pool_id=created.pool_id,
+        is_settled=False,
+    )
+    invoice.pool = pool
+    invoice.status = 'POOL_CREATED'
+    invoice.save(update_fields=['pool', 'status'])
+    return Response(InvoiceSerializer(invoice).data, status=201)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -471,6 +643,8 @@ def calculate_investment(request):
 
     try:
         amount = Decimal(str(amount))
+        if amount <= Decimal('0'):
+            return Response({"error": "Amount must be greater than zero"}, status=400)
     except Exception:
         return Response({"error": "Invalid amount"}, status=400)
 

@@ -49,6 +49,31 @@ class Pool(models.Model):
         ordering = ['-created_at']
 
 
+class Invoice(models.Model):
+    STATUS_CHOICES = [
+        ('UPLOADED', 'Uploaded'),
+        ('VERIFIED', 'Verified'),
+        ('POOL_CREATED', 'Pool Created'),
+    ]
+
+    exporter = models.ForeignKey('AppUser', on_delete=models.CASCADE, related_name='invoices')
+    pool = models.ForeignKey(Pool, null=True, blank=True, on_delete=models.SET_NULL, related_name='invoices')
+    buyer_name = models.CharField(max_length=200)
+    buyer_email = models.EmailField(blank=True, default='')
+    buyer_country = models.CharField(max_length=100, blank=True, default='')
+    invoice_amount = models.DecimalField(max_digits=20, decimal_places=8)
+    due_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='UPLOADED')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Invoice #{self.id} - {self.buyer_name} ({self.status})"
+
+    class Meta:
+        ordering = ['-created_at']
+
+
 # ── Investment ───────────────────────────────────────────
 class Investment(models.Model):
     STATUS_CHOICES = [

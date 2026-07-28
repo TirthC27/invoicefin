@@ -7,6 +7,55 @@ import { ArrowLeft, TrendingUp, Clock, Users, Shield, Percent, CheckCircle2, Loa
 
 const POLL_INTERVAL = 10000;
 
+const getNestedProviderError = (err) => err?.error || err?.info?.error || null;
+
+const getInvestmentErrorText = (err) => [
+  err?.message,
+  err?.shortMessage,
+  err?.reason,
+  getNestedProviderError(err)?.message,
+  err?.stack,
+].filter(Boolean).join(' ');
+
+const isUserRejection = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return err?.code === 'ACTION_REJECTED' || err?.code === 4001 || text.includes('user rejected');
+};
+
+const isInsufficientFunds = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return err?.code === 'INSUFFICIENT_FUNDS' || text.includes('insufficient funds');
+};
+
+const isConfirmationTimeout = (err) => err?.code === 'TRANSACTION_CONFIRMATION_TIMEOUT';
+
+const isWalletInteractionTimeout = (err) => err?.code === 'WALLET_INTERACTION_TIMEOUT';
+
+const isWalletRpcIssue = (err) => {
+  const nested = getNestedProviderError(err);
+  const text = getInvestmentErrorText(err);
+  return (
+    text.includes('BrowserProvider') ||
+    text.includes('eth_blockNumber') ||
+    (err?.code === 'UNKNOWN_ERROR' && nested?.code === -32002)
+  );
+};
+
+const isGenuineRateLimit = (err) => {
+  const nested = getNestedProviderError(err);
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return (
+    err?.code === 429 ||
+    nested?.code === 429 ||
+    text.includes('too many requests')
+  );
+};
+
+const isNetworkFetchFailure = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return text.includes('fetch failed') || text.includes('networkerror') || text.includes('failed to fetch');
+};
+
 export default function PoolDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,7 +68,7 @@ export default function PoolDetailPage() {
   const [amount, setAmount] = useState('');
   const [calcData, setCalcData] = useState(null);
   const [calcLoading, setCalcLoading] = useState(false);
-  const [step, setStep] = useState('input'); // input | pending | confirming | success | error
+  const [step, setStep] = useState('input'); // input | pending | confirming | verifying | success | error
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');
   const debounceRef = useRef(null);
@@ -74,23 +123,53 @@ export default function PoolDetailPage() {
       setTxHash(result.txHash);
       setStep('confirming');
       const receipt = await result.wait();
-      if (receipt.status === 'confirmed') {
-        setStep('confirming');
+      if (receipt.status === 'confirmed' || receipt.status === 1) {
+        setStep('verifying');
         try {
           await investorApi.verifyInvestment(result.txHash);
+          await fetchPool();
           setStep('success');
-          fetchPool();
         } catch (e) {
+          console.error('Backend verify failed:', e);
           setStep('error');
-          setError(e?.error || e?.message || 'Backend verification failed. Your wallet transaction was confirmed, but the portfolio update was rejected.');
+          if (e?.status === 503) {
+            setError('The backend could not reach the blockchain RPC to verify this transaction. Please wait a moment and verify again before retrying.');
+          } else {
+            setError(e?.error || 'Backend verification failed. Please retry after the transaction is indexed.');
+          }
         }
       } else {
         setStep('error');
         setError('Transaction reverted on-chain.');
       }
     } catch (err) {
-      setStep('error');
-      setError(formatWalletError(err));
+      console.error('[Investment] Raw transaction error', err);
+      
+      if (isUserRejection(err)) {
+        setStep('input');
+        return;
+      } else if (isWalletInteractionTimeout(err)) {
+        setStep('error');
+        setError("Your wallet isn't responding. Check for a pending MetaMask notification.");
+      } else if (isConfirmationTimeout(err)) {
+        setStep('error');
+        setError("Your transaction was submitted but confirmation is taking longer than expected.");
+      } else if (isWalletRpcIssue(err)) {
+        setStep('error');
+        setError("Your wallet's network connection appears to be having issues.");
+      } else if (isGenuineRateLimit(err)) {
+        setStep('error');
+        setError('The blockchain network is temporarily busy. Please wait a moment and try again.');
+      } else if (isNetworkFetchFailure(err)) {
+        setStep('error');
+        setError("Couldn't reach the blockchain network. Check your connection and try again.");
+      } else if (isInsufficientFunds(err)) {
+        setStep('error');
+        setError('Your wallet has insufficient funds to cover the investment and gas fees.');
+      } else {
+        setStep('error');
+        setError(formatWalletError(err));
+      }
     }
   };
 
@@ -283,6 +362,15 @@ export default function PoolDetailPage() {
                 <div className="pd-spinner" style={{ borderTopColor: '#F59E0B' }} />
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Confirming On-Chain</div>
                 <div style={{ fontSize: 13, color: '#A0A0A8' }}>Waiting for block confirmation...</div>
+                {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
+              </div>
+            )}
+
+            {step === 'verifying' && (
+              <div className="pd-step-center">
+                <div className="pd-spinner" style={{ borderTopColor: '#22C55E' }} />
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Verifying Investment</div>
+                <div style={{ fontSize: 13, color: '#A0A0A8' }}>Checking the transaction against the backend ledger...</div>
                 {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
               </div>
             )}
