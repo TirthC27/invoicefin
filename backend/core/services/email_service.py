@@ -113,7 +113,7 @@ class EmailService:
         It will never raise — all errors are caught and logged.
         """
         explorer_base = os.getenv(
-            "BLOCK_EXPLORER_URL", "https://sepolia.etherscan.io/"
+            "BLOCK_EXPLORER_URL", "https://amoy.polygonscan.com/"
         )
         frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
@@ -140,7 +140,7 @@ class EmailService:
             self._log_email(user_id, tx_hash, recipient_email, "investment_confirmation", "failed")
             return
 
-        subject = f"Investment Confirmed — {amount_eth} ETH in {pool_name}"
+        subject = f"Investment Confirmed — {amount_eth} POL in {pool_name}"
         success = self._send_smtp(recipient_email, subject, html_body)
         status = "sent" if success else "failed"
         self._log_email(user_id, tx_hash, recipient_email, "investment_confirmation", status)

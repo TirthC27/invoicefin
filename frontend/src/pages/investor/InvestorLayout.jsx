@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWallet } from '../../context/WalletContext';
 import {
   LayoutDashboard, Briefcase, TrendingUp, Shield,
-  LogOut, Bell, ChevronLeft, Menu, Wallet
+  LogOut, Bell, ChevronLeft, Menu, Wallet, AlertTriangle
 } from 'lucide-react';
 import InvestorDashboard from './InvestorDashboard';
 import PoolsPage from './PoolsPage';
@@ -55,6 +55,7 @@ export default function InvestorLayout() {
         .inv-topbar-btn:hover { border-color: rgba(124,92,252,0.3); color: #7C5CFC; background: rgba(124,92,252,0.06); }
         .inv-wallet-connected { border-color: rgba(34,197,94,0.3) !important; color: #22C55E !important; }
         .inv-page { padding: 32px; }
+        .inv-wallet-warning { display: flex; align-items: flex-start; gap: 10px; margin: 16px 32px 0; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(245,158,11,0.28); background: rgba(245,158,11,0.08); color: #FBBF24; font-size: 13px; line-height: 1.45; }
         .inv-collapse-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #A0A0A8; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
         .inv-collapse-btn:hover { color: #fff; border-color: rgba(255,255,255,0.15); }
         .inv-signout-btn { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; color: #A0A0A8; font-size: 13px; font-weight: 500; background: none; border: none; cursor: pointer; width: 100%; transition: all 0.2s; justify-content: ${collapsed ? 'center' : 'flex-start'}; font-family: inherit; }
@@ -120,6 +121,12 @@ export default function InvestorLayout() {
               <button className="inv-topbar-btn" style={{ padding: '0 10px' }}><Bell size={18} /></button>
             </div>
           </div>
+          {wallet?.walletRpcWarning && (
+            <div className="inv-wallet-warning">
+              <AlertTriangle size={18} />
+              <span>{wallet.walletRpcWarning}</span>
+            </div>
+          )}
           <div className="inv-page">
             <Routes>
               <Route path="dashboard" element={<InvestorDashboard />} />

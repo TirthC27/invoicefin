@@ -1,72 +1,86 @@
-import { Contract, parseEther, formatEther } from 'ethers';
-import { CONTRACT_ADDRESS, INVOICE_POOL_ABI } from './networkConfig';
+import { Contract, parseEther, JsonRpcProvider } from 'ethers';
+import { CONTRACT_ADDRESS, DEDICATED_RPC_URL, INVOICE_POOL_ABI, POLYGON_AMOY } from './networkConfig';
+
+const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 90000;
+const WALLET_INTERACTION_TIMEOUT_MS = 20000;
+
+const withTimeout = (promise, ms, code, message) => {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const timeoutError = new Error(message);
+      timeoutError.code = code;
+      reject(timeoutError);
+    }, ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
+
+// Dedicated provider for read/gas operations to avoid MetaMask rate limits
+export const dedicatedProvider = new JsonRpcProvider(DEDICATED_RPC_URL, {
+  chainId: POLYGON_AMOY.chainIdDecimal,
+  name: POLYGON_AMOY.chainName,
+});
+dedicatedProvider.pollingInterval = 15000;
 
 /* ── Get contract instance ───────────────────────────────── */
 
-export function getContract(signerOrProvider) {
+export function getContract(signerOrProvider = dedicatedProvider) {
   return new Contract(CONTRACT_ADDRESS, INVOICE_POOL_ABI, signerOrProvider);
-}
-
-/* ── Read all pools ──────────────────────────────────────── */
-
-export async function fetchPools(provider) {
-  const contract = getContract(provider);
-  const count = await contract.poolCount();
-  const pools = [];
-
-  for (let i = 1; i <= Number(count); i++) {
-    const p = await contract.getPool(i);
-    pools.push({
-      id: Number(p.id),
-      name: p.name,
-      apyBps: Number(p.apyBps),
-      apyPercent: (Number(p.apyBps) / 100).toFixed(2),
-      durationDays: Number(p.durationDays),
-      totalSize: formatEther(p.totalSize),
-      remainingSize: formatEther(p.remainingSize),
-      totalSizeWei: p.totalSize,
-      remainingSizeWei: p.remainingSize,
-      isSettled: p.isSettled,
-      creator: p.creator,
-      createdAt: Number(p.createdAt),
-      percentFilled: p.totalSize > 0n
-        ? (100 - Number((p.remainingSize * 100n) / p.totalSize))
-        : 100,
-    });
-  }
-
-  return pools;
 }
 
 /* ── Invest in a pool ────────────────────────────────────── */
 
 export async function investInPool(signer, poolId, amountInMatic) {
-  const contract = getContract(signer);
   const value = parseEther(amountInMatic.toString());
 
-  // Call the payable invest function
-  const tx = await contract.invest(poolId, { value });
+  // Use dedicated provider to build the transaction (avoids Metamask eth_blockNumber rate limit)
+  const readContract = getContract(dedicatedProvider);
+  const txData = await readContract.invest.populateTransaction(poolId, { value });
+  
+  // Get fee data from the dedicated provider
+  const feeData = await dedicatedProvider.getFeeData();
+  
+  // Estimate gas using dedicated provider
+  const gasEstimate = await dedicatedProvider.estimateGas({
+    ...txData,
+    from: await signer.getAddress()
+  });
+
+  // Construct the final transaction to send to the wallet for signing only
+  const txReq = {
+    ...txData,
+    gasLimit: (gasEstimate * 120n) / 100n, // Add 20% buffer
+    maxFeePerGas: feeData.maxFeePerGas,
+    maxPriorityFeePerGas: feeData.maxPriorityFeePerGas,
+  };
+
+  const tx = await withTimeout(
+    signer.sendTransaction(txReq),
+    WALLET_INTERACTION_TIMEOUT_MS,
+    'WALLET_INTERACTION_TIMEOUT',
+    "Your wallet isn't responding."
+  );
 
   return {
     txHash: tx.hash,
     wait: async () => {
-      const receipt = await tx.wait();
+      const receipt = await dedicatedProvider.waitForTransaction(
+        tx.hash,
+        1,
+        TRANSACTION_CONFIRMATION_TIMEOUT_MS
+      );
+      if (!receipt) {
+        const timeoutError = new Error('Transaction confirmation timed out.');
+        timeoutError.code = 'TRANSACTION_CONFIRMATION_TIMEOUT';
+        timeoutError.txHash = tx.hash;
+        throw timeoutError;
+      }
       return {
         blockNumber: receipt.blockNumber,
         status: receipt.status === 1 ? 'confirmed' : 'failed',
       };
     },
-  };
-}
-
-/* ── Read investor position ──────────────────────────────── */
-
-export async function getMyInvestment(provider, poolId, investorAddress) {
-  const contract = getContract(provider);
-  const [amount, claimed] = await contract.getInvestment(poolId, investorAddress);
-  return {
-    amount: formatEther(amount),
-    amountWei: amount,
-    claimed,
   };
 }

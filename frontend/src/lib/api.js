@@ -69,6 +69,15 @@ export const investorApi = {
   listPools: () => apiRequest('GET', '/pools/'),
   getPoolDetail: (id) => apiRequest('GET', `/pools/${id}/`),
   calculateInvestment: (data) => apiRequest('POST', '/investment/calculate/', data),
+  verifyInvestment: (txHash) => apiRequest('POST', '/investments/verify/', { tx_hash: txHash }),
   getPortfolio: () => apiRequest('GET', '/portfolio/'),
   getRecoveryCases: () => apiRequest('GET', '/investor/recovery-cases/'),
+};
+
+// ── Exporter API ─────────────────────────────────────────
+export const exporterApi = {
+  listInvoices: () => apiRequest('GET', '/exporter/invoices/'),
+  uploadInvoice: (data) => apiRequest('POST', '/exporter/invoices/upload/', data),
+  verifyInvoice: (id) => apiRequest('POST', `/exporter/invoices/${id}/verify/`),
+  createPool: (id, data) => apiRequest('POST', `/exporter/invoices/${id}/create-pool/`, data),
 };

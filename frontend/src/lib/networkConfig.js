@@ -1,16 +1,26 @@
-/* ── Sepolia Testnet Configuration ──────────────────────── */
+/* Polygon Amoy Testnet Configuration */
+
+const ALCHEMY_RPC_URL = import.meta.env.VITE_ALCHEMY_RPC_URL?.trim();
+
+if (!ALCHEMY_RPC_URL) {
+  throw new Error('Missing VITE_ALCHEMY_RPC_URL - set this in frontend/.env');
+}
+
+export const DEDICATED_RPC_URL = ALCHEMY_RPC_URL;
 
 export const POLYGON_AMOY = {
-  chainId: '0xaa36a7',           // 11155111 in decimal
-  chainIdDecimal: 11155111,
-  chainName: 'Sepolia Testnet',
+  chainId: '0x13882',
+  chainIdDecimal: 80002,
+  chainName: 'Polygon Amoy',
   nativeCurrency: {
-    name: 'SepoliaETH',
-    symbol: 'ETH',
+    name: 'POL',
+    symbol: 'POL',
     decimals: 18,
   },
-  rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
-  blockExplorerUrls: ['https://sepolia.etherscan.io/'],
+  rpcUrls: [
+    DEDICATED_RPC_URL
+  ],
+  blockExplorerUrls: ['https://amoy.polygonscan.com/'],
 };
 
 /* ── Contract Config ─────────────────────────────────────── */

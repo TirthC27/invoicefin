@@ -13,7 +13,7 @@ Requires: pip install web3
 
 import os
 from decimal import Decimal
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from core.models import Pool
 
 
@@ -56,11 +56,13 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         contract_address = os.getenv("CONTRACT_ADDRESS")
-        rpc_url = os.getenv("POLYGON_AMOY_RPC_URL", "https://rpc-amoy.polygon.technology/")
+        rpc_url = (os.getenv("POLYGON_AMOY_RPC_URL") or "").strip()
 
         if not contract_address:
             self.stderr.write(self.style.ERROR("CONTRACT_ADDRESS not set in .env"))
             return
+        if not rpc_url:
+            raise CommandError("POLYGON_AMOY_RPC_URL not set in .env")
 
         try:
             from web3 import Web3

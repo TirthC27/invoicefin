@@ -7,6 +7,55 @@ import { ArrowLeft, TrendingUp, Clock, Users, Shield, Percent, CheckCircle2, Loa
 
 const POLL_INTERVAL = 10000;
 
+const getNestedProviderError = (err) => err?.error || err?.info?.error || null;
+
+const getInvestmentErrorText = (err) => [
+  err?.message,
+  err?.shortMessage,
+  err?.reason,
+  getNestedProviderError(err)?.message,
+  err?.stack,
+].filter(Boolean).join(' ');
+
+const isUserRejection = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return err?.code === 'ACTION_REJECTED' || err?.code === 4001 || text.includes('user rejected');
+};
+
+const isInsufficientFunds = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return err?.code === 'INSUFFICIENT_FUNDS' || text.includes('insufficient funds');
+};
+
+const isConfirmationTimeout = (err) => err?.code === 'TRANSACTION_CONFIRMATION_TIMEOUT';
+
+const isWalletInteractionTimeout = (err) => err?.code === 'WALLET_INTERACTION_TIMEOUT';
+
+const isWalletRpcIssue = (err) => {
+  const nested = getNestedProviderError(err);
+  const text = getInvestmentErrorText(err);
+  return (
+    text.includes('BrowserProvider') ||
+    text.includes('eth_blockNumber') ||
+    (err?.code === 'UNKNOWN_ERROR' && nested?.code === -32002)
+  );
+};
+
+const isGenuineRateLimit = (err) => {
+  const nested = getNestedProviderError(err);
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return (
+    err?.code === 429 ||
+    nested?.code === 429 ||
+    text.includes('too many requests')
+  );
+};
+
+const isNetworkFetchFailure = (err) => {
+  const text = getInvestmentErrorText(err).toLowerCase();
+  return text.includes('fetch failed') || text.includes('networkerror') || text.includes('failed to fetch');
+};
+
 export default function PoolDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,7 +68,7 @@ export default function PoolDetailPage() {
   const [amount, setAmount] = useState('');
   const [calcData, setCalcData] = useState(null);
   const [calcLoading, setCalcLoading] = useState(false);
-  const [step, setStep] = useState('input'); // input | pending | confirming | success | error
+  const [step, setStep] = useState('input'); // input | pending | confirming | verifying | success | error
   const [txHash, setTxHash] = useState('');
   const [error, setError] = useState('');
   const debounceRef = useRef(null);
@@ -61,7 +110,7 @@ export default function PoolDetailPage() {
   }, [amount, pool]);
 
   const handleInvest = async () => {
-    if (!amount || Number(amount) <= 0) return;
+    if (!amount || Number(amount) <= 0 || step !== 'input') return;
     setStep('pending');
     setError('');
     try {
@@ -78,27 +127,56 @@ export default function PoolDetailPage() {
       setTxHash(result.txHash);
       setStep('confirming');
       const receipt = await result.wait();
-      if (receipt.status === 'confirmed') {
-        setStep('success');
-        // Backend verification (fire-and-forget)
+      if (receipt.status === 'confirmed' || receipt.status === 1) {
+        setStep('verifying');
         try {
-          const { supabase } = await import('../../lib/supabaseClient');
-          const { data: { session } } = await supabase.auth.getSession();
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-          await fetch(`${API_BASE}/api/investments/verify/`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}) },
-            body: JSON.stringify({ tx_hash: result.txHash }),
-          });
-        } catch (e) { console.error('Backend verify failed:', e); }
-        fetchPool();
+          await investorApi.verifyInvestment(result.txHash);
+          await fetchPool();
+          setStep('success');
+        } catch (e) {
+          console.error('Backend verify failed:', e);
+          setStep('error');
+          if (e?.status === 503) {
+            setError('The backend could not reach the blockchain RPC to verify this transaction. Please wait a moment and verify again before retrying.');
+          } else {
+            setError(e?.error || 'Backend verification failed. Please retry after the transaction is indexed.');
+          }
+        }
       } else {
         setStep('error');
         setError('Transaction reverted on-chain.');
       }
     } catch (err) {
+      console.error('[Investment] Raw transaction error', {
+        err,
+        code: err?.code,
+        message: err?.message,
+        shortMessage: err?.shortMessage,
+        reason: err?.reason,
+        error: err?.error,
+        info: err?.info,
+        data: err?.data,
+        stack: err?.stack,
+      });
       setStep('error');
-      setError(err?.info?.error?.message || err?.message || 'Transaction failed');
+      if (isUserRejection(err)) {
+        setStep('input');
+        return;
+      } else if (isWalletInteractionTimeout(err)) {
+        setError("Your wallet isn't responding. This is often caused by a network connection issue inside your wallet - check for a pending MetaMask notification, or try the network settings fix above.");
+      } else if (isConfirmationTimeout(err)) {
+        setError("Your transaction was submitted but confirmation is taking longer than expected. Check your wallet's activity tab or the block explorer for status before retrying, to avoid double-investing.");
+      } else if (isWalletRpcIssue(err)) {
+        setError("Your wallet's network connection to Polygon Amoy appears to be having issues. Try checking your wallet's network settings (see the banner above), or removing and re-adding the Polygon Amoy network in your wallet.");
+      } else if (isGenuineRateLimit(err)) {
+        setError('The blockchain network is temporarily busy. Please wait a moment and try again.');
+      } else if (isNetworkFetchFailure(err)) {
+        setError("Couldn't reach the blockchain network. Check your connection and try again.");
+      } else if (isInsufficientFunds(err)) {
+        setError('Your wallet has insufficient funds to cover the investment and gas fees.');
+      } else {
+        setError('Something went wrong with the transaction. Please try again.');
+      }
     }
   };
 
@@ -289,6 +367,15 @@ export default function PoolDetailPage() {
                 <div className="pd-spinner" style={{ borderTopColor: '#F59E0B' }} />
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Confirming On-Chain</div>
                 <div style={{ fontSize: 13, color: '#A0A0A8' }}>Waiting for block confirmation...</div>
+                {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
+              </div>
+            )}
+
+            {step === 'verifying' && (
+              <div className="pd-step-center">
+                <div className="pd-spinner" style={{ borderTopColor: '#22C55E' }} />
+                <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Verifying Investment</div>
+                <div style={{ fontSize: 13, color: '#A0A0A8' }}>Checking the transaction against the backend ledger...</div>
                 {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
               </div>
             )}

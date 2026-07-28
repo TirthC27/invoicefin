@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { BrowserProvider } from 'ethers';
-import { POLYGON_AMOY } from '../lib/networkConfig';
+import { BrowserProvider, JsonRpcProvider } from 'ethers';
+import { DEDICATED_RPC_URL, POLYGON_AMOY } from '../lib/networkConfig';
 
 /* ── Context ─────────────────────────────────────────────── */
 const WalletContext = createContext(null);
@@ -17,6 +17,30 @@ const getMetaMaskProvider = () => {
   return window.ethereum;
 };
 
+// Singleton provider to prevent memory leaks in strict mode / hot reloads
+let browserProviderInstance = null;
+let dedicatedHealthProvider = null;
+
+const withTimeout = (promise, ms, message) => {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), ms);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+};
+
+const getDedicatedHealthProvider = () => {
+  if (!dedicatedHealthProvider) {
+    dedicatedHealthProvider = new JsonRpcProvider(DEDICATED_RPC_URL, {
+      chainId: POLYGON_AMOY.chainIdDecimal,
+      name: POLYGON_AMOY.chainName,
+    });
+    dedicatedHealthProvider.pollingInterval = 15000;
+  }
+  return dedicatedHealthProvider;
+};
+
 /* ── Provider ────────────────────────────────────────────── */
 export function WalletProvider({ children }) {
   const [walletAddress, setWalletAddress] = useState(null);
@@ -24,7 +48,49 @@ export function WalletProvider({ children }) {
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('disconnected'); // disconnected | connecting | connected | wrong_network
+  const [walletRpcWarning, setWalletRpcWarning] = useState('');
   const reconnecting = useRef(false);
+
+  const checkWalletRpcHealth = useCallback(async (bp, cid) => {
+    if (cid !== POLYGON_AMOY.chainIdDecimal) {
+      setWalletRpcWarning('');
+      return;
+    }
+
+    const appProvider = getDedicatedHealthProvider();
+    const [appBlock, walletBlock] = await Promise.allSettled([
+      withTimeout(appProvider.getBlockNumber(), 8000, 'Dedicated Polygon Amoy RPC health check timed out.'),
+      withTimeout(bp.getBlockNumber(), 8000, 'Wallet Polygon Amoy RPC health check timed out.'),
+    ]);
+
+    if (appBlock.status === 'fulfilled' && walletBlock.status === 'rejected') {
+      console.warn('[Wallet] Polygon Amoy RPC health check failed', {
+        walletError: walletBlock.reason,
+        appBlockNumber: appBlock.value,
+      });
+      setWalletRpcWarning(
+        "Your wallet's saved network settings for Polygon Amoy may be using an unreliable connection. To fix: open MetaMask, click the network name, edit Polygon Amoy, and update the RPC URL to your dedicated Alchemy Polygon Amoy endpoint, or remove and re-add the network."
+      );
+      return;
+    }
+
+    if (appBlock.status === 'fulfilled' && walletBlock.status === 'fulfilled') {
+      const blockGap = Math.abs(appBlock.value - walletBlock.value);
+      if (blockGap > 50) {
+        console.warn('[Wallet] Polygon Amoy RPC appears out of sync', {
+          appBlockNumber: appBlock.value,
+          walletBlockNumber: walletBlock.value,
+          blockGap,
+        });
+        setWalletRpcWarning(
+          "Your wallet's Polygon Amoy connection appears out of sync. To fix: open MetaMask, click the network name, edit Polygon Amoy, and update the RPC URL to your dedicated Alchemy Polygon Amoy endpoint, or remove and re-add the network."
+        );
+        return;
+      }
+    }
+
+    setWalletRpcWarning('');
+  }, []);
 
   /* ── Switch to Polygon Amoy ──────────────────────────── */
   const switchToPolygonAmoy = useCallback(async () => {
@@ -58,7 +124,16 @@ export function WalletProvider({ children }) {
   const setupProviderAndSigner = useCallback(async () => {
     const providerObj = getMetaMaskProvider();
     if (!providerObj) return null;
-    const bp = new BrowserProvider(providerObj);
+    
+    // Prevent provider memory leaks which cause RPC rate-limit errors
+    if (!browserProviderInstance) {
+      // Use 'any' network to handle chain switching smoothly
+      browserProviderInstance = new BrowserProvider(providerObj, "any");
+      // Reduce aggressive default polling (4s -> 15s) to protect free RPC tiers
+      browserProviderInstance.pollingInterval = 15000;
+    }
+    const bp = browserProviderInstance;
+    
     const s = await bp.getSigner();
     const network = await bp.getNetwork();
     const cid = Number(network.chainId);
@@ -66,9 +141,10 @@ export function WalletProvider({ children }) {
     setProvider(bp);
     setSigner(s);
     setChainId(cid);
+    await checkWalletRpcHealth(bp, cid);
 
     return { provider: bp, signer: s, chainId: cid };
-  }, []);
+  }, [checkWalletRpcHealth]);
 
   /* ── Connect Wallet ──────────────────────────────────── */
   const connectWallet = useCallback(async () => {
@@ -145,6 +221,7 @@ export function WalletProvider({ children }) {
     setChainId(null);
     setProvider(null);
     setSigner(null);
+    setWalletRpcWarning('');
     setConnectionStatus('disconnected');
     localStorage.removeItem(LS_KEY);
     localStorage.removeItem(LS_KEY + '_mock');
@@ -241,6 +318,7 @@ export function WalletProvider({ children }) {
     connectWallet,
     disconnectWallet,
     switchToPolygonAmoy,
+    walletRpcWarning,
     isConnected: connectionStatus === 'connected',
     isWrongNetwork: connectionStatus === 'wrong_network',
     truncatedAddress: walletAddress

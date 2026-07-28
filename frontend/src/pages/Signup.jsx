@@ -2,6 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const ROLE_OPTIONS = [
+  { value: 'INVESTOR', label: 'Investor' },
+  { value: 'EXPORTER', label: 'Exporter' },
+  { value: 'LAW_FIRM', label: 'Law Firm' },
+  { value: 'ADMIN', label: 'Admin' },
+];
+
 /* ─────────────────────────────────────────────────────────────
    SVG ICONS (inline — zero extra dependencies)
 ───────────────────────────────────────────────────────────── */
@@ -145,6 +153,7 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [role, setRole] = useState('INVESTOR');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -167,7 +176,16 @@ export default function Signup() {
 
     try {
       // 1. Sign up via Supabase Auth
-      const { data, error: signupError } = await supabase.auth.signUp({ email, password });
+      const { data, error: signupError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role,
+          },
+        },
+      });
 
       console.log('[Signup] Supabase response:', { data, signupError });
 
@@ -179,7 +197,7 @@ export default function Signup() {
           id: data.user.id,
           email: data.user.email,
           full_name: fullName,
-          role: 'investor',
+          role,
         }, { onConflict: 'id' });
 
         if (profileError) {
@@ -187,6 +205,20 @@ export default function Signup() {
         }
 
         if (data?.session) {
+          const syncResp = await fetch(`${API_BASE}/auth/sync-user/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ full_name: fullName, role }),
+          });
+
+          if (!syncResp.ok) {
+            const syncError = await syncResp.json().catch(() => ({}));
+            throw new Error(syncError.error || 'Account created, but role sync failed.');
+          }
+
           navigate('/dashboard');
         } else {
           setSuccess('Account created! Check your email to confirm, then login.');
@@ -328,6 +360,9 @@ export default function Signup() {
         .lp-input-wrap { position: relative; display: flex; align-items: center; }
         .lp-input-icon { position: absolute; left: 14px; color: #A0A0A8; pointer-events: none; display: flex; align-items: center; }
         .lp-input { width: 100%; height: 46px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 0 40px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
+        .lp-select { width: 100%; height: 46px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 0 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
+        .lp-select option { background: #151518; color: #fff; }
+        .lp-select:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
         .lp-input::placeholder { color: rgba(160,160,168,0.45); }
         .lp-input:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
         .lp-input-right { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: #A0A0A8; display: flex; align-items: center; padding: 4px; transition: color 0.2s; }
@@ -533,6 +568,24 @@ export default function Signup() {
                       {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
                     </button>
                   </div>
+                </div>
+
+                {/* Role selector */}
+                <div className="lp-input-group">
+                  <label htmlFor="signup-role" className="lp-label">Role</label>
+                  <select
+                    id="signup-role"
+                    required
+                    className="lp-select"
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                  >
+                    {ROLE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Submit button */}

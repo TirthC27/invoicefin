@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useWallet } from '../context/WalletContext';
 import { investInPool } from '../lib/contractService';
 import { POLYGON_AMOY } from '../lib/networkConfig';
+import { investorApi } from '../lib/api';
 
 // Lucide icons
 import {
@@ -90,8 +91,10 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
             setTxHash(result.txHash);
             setStep('confirming');
             const receipt = await result.wait();
-            if (receipt.status === 'confirmed') {
+            if (receipt.status === 'confirmed' || receipt.status === 1) {
                 setBlockNumber(receipt.blockNumber);
+                setStep('verifying');
+                await investorApi.verifyInvestment(result.txHash);
                 setStep('success');
                 onSuccess?.(pool.id, amount, result.txHash, receipt.blockNumber, interestRate);
             } else { setStep('error'); setError('Transaction reverted on-chain.'); }
@@ -145,6 +148,15 @@ function InvestModal({ pool, onClose, signer, walletAddress, userId, onSuccess }
                         <div style={{ width: 44, height: 44, border: `3px solid rgba(124,92,252,0.15)`, borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
                         <p style={{ color: '#FFFFFF', fontSize: '0.95rem', fontWeight: 600, marginBottom: 4 }}>Confirming on Polygon</p>
                         <p style={{ color: '#A1A1AA', fontSize: '0.8rem', marginBottom: 12 }}>Waiting for block confirmation on-chain…</p>
+                        <p style={{ color: '#71717A', fontSize: '0.72rem', fontFamily: 'monospace', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: 8, display: 'inline-block' }}>{short(txHash)}</p>
+                    </div>
+                )}
+
+                {step === 'verifying' && (
+                    <div style={{ textAlign: 'center', padding: '30px 0' }}>
+                        <div style={{ width: 44, height: 44, border: `3px solid rgba(34,197,94,0.15)`, borderTopColor: '#22C55E', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 20px' }} />
+                        <p style={{ color: '#FFFFFF', fontSize: '0.95rem', fontWeight: 600, marginBottom: 4 }}>Verifying Investment</p>
+                        <p style={{ color: '#A1A1AA', fontSize: '0.8rem', marginBottom: 12 }}>Checking the transaction with the backend ledger...</p>
                         <p style={{ color: '#71717A', fontSize: '0.72rem', fontFamily: 'monospace', background: 'rgba(255,255,255,0.02)', padding: '6px 12px', borderRadius: 8, display: 'inline-block' }}>{short(txHash)}</p>
                     </div>
                 )}
@@ -252,32 +264,6 @@ export default function Dashboard() {
             }
             return p;
         }));
-
-        // Send ONLY tx_hash to the backend — it verifies everything on-chain
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-            const res = await fetch(`${API_BASE}/api/investments/verify/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-                },
-                body: JSON.stringify({ tx_hash: txHash }),
-            });
-
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                console.warn('Backend verify response:', res.status, err);
-            } else {
-                console.log('Investment verified on backend ✓');
-            }
-        } catch (err) {
-            // Backend verification failure should not break the UI
-            console.error('Backend verify call failed:', err);
-        }
     }, [selectedPool]);
 
     const handleCopy = () => {

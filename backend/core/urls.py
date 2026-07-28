@@ -10,9 +10,18 @@ urlpatterns = [
 
     # User
     path('user/me/', views.get_user_me, name='get_user_me'),
+    path('auth/sync-user/', views.sync_user_role, name='sync_user_role'),
+
+    # Exporter invoices
+    path('exporter/invoices/', views.list_exporter_invoices, name='list_exporter_invoices'),
+    path('exporter/invoices/upload/', views.upload_invoice, name='upload_invoice'),
+    path('exporter/invoices/<int:pk>/', views.get_invoice_detail, name='get_invoice_detail'),
+    path('exporter/invoices/<int:pk>/verify/', views.verify_invoice, name='verify_invoice'),
+    path('exporter/invoices/<int:pk>/create-pool/', views.create_pool_from_invoice, name='create_pool_from_invoice'),
 
     # Pools
     path('pools/', views.list_pools, name='list_pools'),
+    path('pool/all/', views.list_pools, name='list_pools_legacy'),
     path('pools/create/', views.create_pool, name='create_pool'),
     path('pools/<int:pk>/', views.get_pool_detail, name='get_pool_detail'),
 

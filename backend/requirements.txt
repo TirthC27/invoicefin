@@ -1,0 +1,13 @@
+Django==5.2.13
+PyJWT==2.12.1
+certifi==2026.2.25
+cryptography==49.0.0
+dj-database-url==3.1.2
+django-cors-headers==4.9.0
+djangorestframework==3.17.1
+gunicorn==26.0.0
+psycopg2-binary==2.9.12
+python-dotenv==1.2.2
+requests==2.33.1
+web3==7.16.0
+whitenoise==6.12.0

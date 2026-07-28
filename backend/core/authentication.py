@@ -5,6 +5,14 @@ from rest_framework import authentication, exceptions
 from rest_framework.response import Response
 
 
+APP_ROLES = {'INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN'}
+
+
+def normalize_role(value, default='INVESTOR'):
+    role = (value or '').upper()
+    return role if role in APP_ROLES else default
+
+
 # ── Simple user object attached to request.user ──────────
 class SimpleUser:
     """
@@ -70,8 +78,13 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
             user_id = decoded.get('sub')
             email = decoded.get('email', '')
 
-            # Try to enrich with local AppUser data
-            role = decoded.get('role', 'INVESTOR').upper()
+            # Try to enrich with local AppUser data. Supabase's built-in
+            # "role" claim is usually "authenticated", not our app role.
+            metadata = decoded.get('user_metadata') or {}
+            app_metadata = decoded.get('app_metadata') or {}
+            role = normalize_role(
+                metadata.get('role') or app_metadata.get('role') or decoded.get('app_role')
+            )
             status = 'ACTIVE'
             app_user = None
 

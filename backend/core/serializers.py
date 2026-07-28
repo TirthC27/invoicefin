@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Pool, Investment, Transaction, Portfolio
+from .models import Invoice, Pool, Investment, Transaction, Portfolio
 
 
 class PoolSerializer(serializers.ModelSerializer):
@@ -61,6 +61,26 @@ class PoolDetailSerializer(serializers.ModelSerializer):
 
     def get_investor_count(self, obj):
         return obj.investments.filter(status__in=['confirmed', 'active', 'completed']).values('user_id').distinct().count()
+
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    pool_contract_id = serializers.IntegerField(source='pool.contract_pool_id', read_only=True, default=None)
+    pool_name = serializers.CharField(source='pool.name', read_only=True, default=None)
+
+    class Meta:
+        model = Invoice
+        fields = [
+            'id', 'exporter', 'buyer_name', 'buyer_email', 'buyer_country',
+            'invoice_amount', 'due_date', 'status', 'verified_at',
+            'pool', 'pool_contract_id', 'pool_name', 'created_at',
+        ]
+        read_only_fields = ['id', 'exporter', 'status', 'verified_at', 'pool', 'pool_contract_id', 'pool_name', 'created_at']
+
+
+class CreateInvoicePoolSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200, required=False, allow_blank=True)
+    apy = serializers.DecimalField(max_digits=6, decimal_places=2)
+    duration_days = serializers.IntegerField(min_value=0)
 
 
 class InvestmentSerializer(serializers.ModelSerializer):

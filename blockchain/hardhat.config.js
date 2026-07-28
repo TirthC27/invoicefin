@@ -3,18 +3,32 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+if (!process.env.POLYGON_AMOY_RPC_URL) {
+  throw new Error("Missing POLYGON_AMOY_RPC_URL - set this in blockchain/.env");
+}
+
 /** @type import('hardhat/config').HardhatUserConfig */
 export default {
   solidity: "0.8.24",
   networks: {
-    sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
+    amoy: {
+      url: process.env.POLYGON_AMOY_RPC_URL,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
     apiKey: {
-      sepolia: process.env.ETHERSCAN_API_KEY || "",
+      amoy: process.env.POLYGONSCAN_API_KEY || "",
     },
+    customChains: [
+      {
+        network: "amoy",
+        chainId: 80002,
+        urls: {
+          apiURL: "https://api-amoy.polygonscan.com/api",
+          browserURL: "https://amoy.polygonscan.com",
+        },
+      },
+    ],
   },
 };
