@@ -84,7 +84,8 @@ class Command(BaseCommand):
                 if existing:
                     continue
 
-                # We need an exporter — use pool creator or a placeholder
+                # Exporter resolution: For on-chain pool investments, if an explicit invoice exporter
+                # cannot be resolved directly from the pool, fallback to the system exporter account.
                 if not exporter_user:
                     exporter_user, _ = AppUser.objects.get_or_create(
                         email='system@invoicefi.app',

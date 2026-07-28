@@ -1,13 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth, ProtectedRoute } from './context/AuthContext';
+import { ProtectedRoute } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
+import NotFound from './pages/NotFound';
 
 // New role-based pages
 import AdminLayout from './pages/admin/AdminLayout';
 import LawFirmLayout from './pages/lawfirm/LawFirmLayout';
-import ExporterDashboard from './pages/exporter/ExporterDashboard';
+import ExporterLayout from './pages/exporter/ExporterLayout';
 import InvestorLayout from './pages/investor/InvestorLayout';
 
 import './index.css';
@@ -17,7 +18,7 @@ import './index.css';
  * This preserves backward compatibility: existing /dashboard URLs still work.
  */
 function RoleRedirect() {
-  const { user, loading } = useAuth();
+  const { user, session, loading } = useAuth();
 
   if (loading) {
     return (
@@ -30,9 +31,11 @@ function RoleRedirect() {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user && !session) return <Navigate to="/login" replace />;
 
-  switch (user.role) {
+  const role = (user?.role || 'INVESTOR').toUpperCase();
+
+  switch (role) {
     case 'ADMIN': return <Navigate to="/admin/dashboard" replace />;
     case 'LAW_FIRM': return <Navigate to="/lawfirm/dashboard" replace />;
     case 'EXPORTER': return <Navigate to="/exporter/dashboard" replace />;
@@ -76,12 +79,15 @@ function App() {
           </ProtectedRoute>
         } />
 
-        {/* ── Exporter portal (stub) ── */}
-        <Route path="/exporter/dashboard" element={
+        {/* ── Exporter portal ── */}
+        <Route path="/exporter/*" element={
           <ProtectedRoute allowedRoles={['EXPORTER']}>
-            <ExporterDashboard />
+            <ExporterLayout />
           </ProtectedRoute>
         } />
+
+        {/* Application-level 404 */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );

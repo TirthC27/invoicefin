@@ -7,13 +7,13 @@ const POLL_INTERVAL = 10000;
 
 const CHART_COLORS = ['#7C5CFC', '#22C55E', '#F59E0B', '#3B82F6', '#EF4444', '#EC4899'];
 
-function StatCard({ label, value, icon: Icon, color, prefix = '' }) {
+function StatCard({ label, value, icon: IconComponent, color, prefix = '' }) {
   return (
     <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16, padding: 24, transition: 'transform 0.2s, box-shadow 0.2s' }}
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}>
       <div style={{ width: 44, height: 44, borderRadius: 12, background: `${color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-        <Icon size={22} color={color} />
+        {React.createElement(IconComponent, { size: 22, color })}
       </div>
       <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5, marginBottom: 4 }}>
         {prefix}{typeof value === 'number' ? value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : value}

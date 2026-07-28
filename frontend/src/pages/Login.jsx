@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate, Link } from 'react-router-dom';
-import { useWallet } from '../context/WalletContext';
+import { useWallet } from '../context/useWallet';
+
+import { useAuth } from '../context/useAuth';
 
 /* ─────────────────────────────────────────────────────────────
    SVG ICONS (inline — zero extra dependencies)
@@ -176,7 +178,15 @@ export default function Login() {
   /* ── Wallet context ── */
   const { connectWallet, connectionStatus, truncatedAddress } = useWallet();
 
+  const { isAuthenticated, loading: authLoading, backendAuthError } = useAuth();
+
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   /* ── Existing handleLogin (UNCHANGED logic) ── */
   const handleLogin = async (e) => {
@@ -188,7 +198,7 @@ export default function Login() {
       const { data, error: loginError } = await supabase.auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
       if (data?.session) {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
       setError(err.message || 'Invalid credentials. Please try again.');
@@ -516,7 +526,7 @@ export default function Login() {
               <p className="lp-auth-subtitle">Continue managing your invoice investments.</p>
 
               {/* Error display (existing) */}
-              {error && <div className="lp-error">{error}</div>}
+              {(error || backendAuthError) && <div className="lp-error">{error || backendAuthError}</div>}
 
               {/* ── AUTH FORM (all existing logic preserved) ── */}
               <form onSubmit={handleLogin}>

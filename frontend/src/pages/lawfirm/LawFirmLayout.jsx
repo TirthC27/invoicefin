@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Routes, Route, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
 import {
   LayoutDashboard, Scale, FileText, Clock, Handshake,
-  User, LogOut, Bell, ChevronLeft, Menu
+  User, LogOut, ChevronLeft, Menu
 } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import LawFirmDashboard from './LawFirmDashboard';
 import AssignedCasesPage from './AssignedCasesPage';
 import CaseDetailPage from './CaseDetailPage';
@@ -124,15 +125,17 @@ export default function LawFirmLayout() {
             </button>
             <div className="lf-topbar-title">Law Firm Portal</div>
             <div className="lf-topbar-actions">
-              <button className="lf-topbar-btn"><Bell size={18} /></button>
+              <NotificationBell buttonClassName="lf-topbar-btn" accent="#22C55E" />
             </div>
           </div>
 
           <div className="lf-page">
             <Routes>
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<LawFirmDashboard />} />
               <Route path="cases" element={<AssignedCasesPage />} />
               <Route path="cases/:id" element={<CaseDetailPage />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </div>
         </main>

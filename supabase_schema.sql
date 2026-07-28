@@ -456,3 +456,298 @@ ON CONFLICT DO NOTHING;
 -- All write operations go through Django API
 -- with SUPABASE_SERVICE_ROLE_KEY (bypasses RLS).
 -- ═══════════════════════════════════════════════════════
+
+
+-- ═══════════════════════════════════════════════════════
+-- SECTION 6 — SCHEMA COMPLETION (drift reconciliation)
+-- ═══════════════════════════════════════════════════════
+-- Added: 2026-07-24
+-- Source: Step-1 inventory comparing all Django models,
+--         migrations, serializers, views, and frontend
+--         Supabase client calls against this file.
+--
+-- Tables added in this pass:
+--   • profiles        — read/written directly by Supabase
+--                       client (Signup.jsx) and by Django
+--                       backend REST calls (views.py)
+--   • invoices        — Django migration 0006, never mirrored
+--   • invoice_pools   — Django migration 0006, never mirrored
+--   • upload_history  — Django migration 0006, never mirrored
+--
+-- Conflict C-1 resolved (Option A):
+--   profiles.role stores lowercase values ('investor' etc.)
+--   matching what Signup.jsx actually writes.
+--   app_users.role stays uppercase — they serve different
+--   purposes (profiles = frontend cosmetic, app_users =
+--   authoritative backend role enforcement).
+--
+-- All statements are guarded with IF NOT EXISTS /
+-- DROP POLICY IF EXISTS for full re-runnability.
+-- ═══════════════════════════════════════════════════════
+
+
+-- =========================
+-- PROFILES
+-- Direct Supabase-client table. Written by Signup.jsx at
+-- user registration; read by Django backend (views.py) to
+-- retrieve wallet_address and full_name for on-chain
+-- wallet ownership verification and /api/user/me/ response.
+--
+-- • id matches auth.users.id exactly (UUID PK).
+-- • role is lowercase (see Conflict C-1 note above).
+-- • wallet_address is the MetaMask address saved by the
+--   user after connecting their wallet; read by
+--   _get_user_wallet() in views.py before verifying a TX.
+-- =========================
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+    email TEXT,
+    full_name TEXT DEFAULT '',
+    role TEXT DEFAULT 'INVESTOR'
+        CHECK (role IN ('investor', 'exporter', 'law_firm', 'admin', 'INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN')),
+    wallet_address TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_profiles_wallet ON public.profiles(wallet_address);
+
+-- =========================
+-- TRIGGER: Auto-create app_users row on auth.users insert
+-- Ensures there is NEVER a Supabase user without an app_users row.
+-- =========================
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    user_role TEXT;
+    user_name TEXT;
+BEGIN
+    user_role := UPPER(COALESCE(NEW.raw_user_meta_data->>'role', 'INVESTOR'));
+    IF user_role NOT IN ('INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN') THEN
+        user_role := 'INVESTOR';
+    END IF;
+    user_name := COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name', '');
+
+    INSERT INTO public.app_users (supabase_uid, email, full_name, role, status)
+    VALUES (NEW.id, NEW.email, user_name, user_role, 'ACTIVE')
+    ON CONFLICT (supabase_uid) DO NOTHING;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS trg_on_auth_user_created ON auth.users;
+CREATE TRIGGER trg_on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+
+-- =========================
+-- INVOICES
+-- Mirror of Django Invoice model (migration 0006).
+-- Managed exclusively by the Django backend via
+-- SUPABASE_SERVICE_ROLE_KEY; not written from the frontend
+-- directly. Linked to app_users (BIGINT FK), not auth.users,
+-- because the exporter relationship is via AppUser.
+-- =========================
+CREATE TABLE IF NOT EXISTS public.invoices (
+    id BIGSERIAL PRIMARY KEY,
+    exporter_id BIGINT REFERENCES public.app_users(id) ON DELETE CASCADE,
+    invoice_number TEXT NOT NULL UNIQUE,
+    buyer_name TEXT NOT NULL,
+    buyer_company TEXT NOT NULL,
+    amount NUMERIC(20, 2) NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'USD'
+        CHECK (currency IN ('USD', 'EUR', 'GBP', 'INR', 'AED', 'SGD', 'JPY', 'CNY')),
+    issue_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    po_number TEXT DEFAULT '',
+    country TEXT DEFAULT 'United States',
+    description TEXT DEFAULT '',
+    pdf_url TEXT DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'Verified'
+        CHECK (status IN ('Draft', 'Verified', 'Funding', 'Funded', 'Active', 'Completed')),
+    funded_amount NUMERIC(20, 2) DEFAULT 0,
+    blockchain_hash TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoices_exporter ON public.invoices(exporter_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON public.invoices(due_date);
+CREATE INDEX IF NOT EXISTS idx_invoices_number ON public.invoices(invoice_number);
+
+-- Auto-update updated_at on any row change (reuses set_updated_at() from Section 2)
+DROP TRIGGER IF EXISTS trg_invoices_updated_at ON public.invoices;
+CREATE TRIGGER trg_invoices_updated_at
+    BEFORE UPDATE ON public.invoices
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- =========================
+-- INVOICE_POOLS
+-- Mirror of Django InvoicePool model (migration 0006).
+-- 1:1 extension of invoices — one pool per invoice.
+-- Holds the crowdfunding parameters set by the exporter
+-- when they open an invoice for investor funding.
+-- =========================
+CREATE TABLE IF NOT EXISTS public.invoice_pools (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT UNIQUE NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    pool_size NUMERIC(20, 2) NOT NULL,
+    expected_roi NUMERIC(6, 2) NOT NULL,
+    funding_deadline DATE NOT NULL,
+    min_investment NUMERIC(20, 2) NOT NULL,
+    max_investment NUMERIC(20, 2) NOT NULL,
+    amount_funded NUMERIC(20, 2) DEFAULT 0,
+    is_visible_to_investors BOOLEAN DEFAULT TRUE,
+    status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN ('open', 'fully_funded', 'closed')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_invoice_pools_invoice ON public.invoice_pools(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_invoice_pools_status ON public.invoice_pools(status);
+
+-- Auto-update updated_at on any row change
+DROP TRIGGER IF EXISTS trg_invoice_pools_updated_at ON public.invoice_pools;
+CREATE TRIGGER trg_invoice_pools_updated_at
+    BEFORE UPDATE ON public.invoice_pools
+    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+-- =========================
+-- UPLOAD_HISTORY
+-- Mirror of Django UploadHistory model (migration 0006).
+-- Activity log for invoice lifecycle events. Written by
+-- _log_activity() in exporter_views.py on every status
+-- transition, pool creation, or maturity event.
+-- =========================
+CREATE TABLE IF NOT EXISTS public.upload_history (
+    id BIGSERIAL PRIMARY KEY,
+    invoice_id BIGINT NOT NULL REFERENCES public.invoices(id) ON DELETE CASCADE,
+    pool_id BIGINT REFERENCES public.invoice_pools(id) ON DELETE SET NULL,
+    action_type TEXT NOT NULL
+        CHECK (action_type IN (
+            'uploaded', 'verified', 'pool_created',
+            'funded', 'matured', 'status_changed'
+        )),
+    description TEXT NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_upload_history_invoice ON public.upload_history(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_upload_history_pool ON public.upload_history(pool_id);
+CREATE INDEX IF NOT EXISTS idx_upload_history_action ON public.upload_history(action_type);
+
+
+-- ═══════════════════════════════════════════════════════
+-- SECTION 6 — ROW LEVEL SECURITY (new tables only)
+-- ═══════════════════════════════════════════════════════
+
+-- ─── profiles ────────────────────────────────────────
+-- Users can read and update their own profile row.
+-- Insert is allowed at signup (Signup.jsx calls upsert).
+-- No other user can read another user's profile.
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users read own profile" ON public.profiles;
+CREATE POLICY "Users read own profile"
+    ON public.profiles FOR SELECT
+    USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users insert own profile" ON public.profiles;
+CREATE POLICY "Users insert own profile"
+    ON public.profiles FOR INSERT
+    WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+CREATE POLICY "Users update own profile"
+    ON public.profiles FOR UPDATE
+    USING (auth.uid() = id);
+
+
+-- ─── invoices ────────────────────────────────────────
+-- Exporters see only their own invoices (matched via
+-- app_users.supabase_uid → invoices.exporter_id).
+-- Authenticated investors get read access for investment
+-- discovery. All writes go through Django service role.
+ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Exporters read own invoices" ON public.invoices;
+CREATE POLICY "Exporters read own invoices"
+    ON public.invoices FOR SELECT
+    USING (
+        exporter_id IN (
+            SELECT id FROM public.app_users
+            WHERE supabase_uid = auth.uid()
+        )
+    );
+
+DROP POLICY IF EXISTS "Authenticated users read visible invoices" ON public.invoices;
+CREATE POLICY "Authenticated users read visible invoices"
+    ON public.invoices FOR SELECT
+    USING (
+        auth.role() = 'authenticated'
+        AND status IN ('Funding', 'Funded', 'Active', 'Completed')
+    );
+
+-- Writes are service-role only (Django backend bypasses RLS).
+-- No INSERT/UPDATE/DELETE policies for anon or authenticated
+-- roles — all mutations go through Django API.
+
+
+-- ─── invoice_pools ───────────────────────────────────
+-- Authenticated users can read pools that are visible to
+-- investors (is_visible_to_investors = TRUE).
+-- Exporters can also read their own pools (even non-visible).
+-- All writes go through Django service role.
+ALTER TABLE public.invoice_pools ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users read visible invoice pools" ON public.invoice_pools;
+CREATE POLICY "Authenticated users read visible invoice pools"
+    ON public.invoice_pools FOR SELECT
+    USING (
+        auth.role() = 'authenticated'
+        AND is_visible_to_investors = TRUE
+    );
+
+DROP POLICY IF EXISTS "Exporters read own invoice pools" ON public.invoice_pools;
+CREATE POLICY "Exporters read own invoice pools"
+    ON public.invoice_pools FOR SELECT
+    USING (
+        invoice_id IN (
+            SELECT inv.id FROM public.invoices inv
+            JOIN public.app_users au ON au.id = inv.exporter_id
+            WHERE au.supabase_uid = auth.uid()
+        )
+    );
+
+
+-- ─── upload_history ──────────────────────────────────
+-- Exporters can read activity history for their own invoices.
+-- Admins use service role. No direct writes from frontend.
+ALTER TABLE public.upload_history ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Exporters read own upload history" ON public.upload_history;
+CREATE POLICY "Exporters read own upload history"
+    ON public.upload_history FOR SELECT
+    USING (
+        invoice_id IN (
+            SELECT inv.id FROM public.invoices inv
+            JOIN public.app_users au ON au.id = inv.exporter_id
+            WHERE au.supabase_uid = auth.uid()
+        )
+    );
+
+-- ═══════════════════════════════════════════════════════
+-- END OF SECTION 6
+-- Full file is re-runnable end-to-end:
+--   • All CREATE TABLE / CREATE INDEX use IF NOT EXISTS.
+--   • All policies use DROP POLICY IF EXISTS + CREATE POLICY.
+--   • All triggers use DROP TRIGGER IF EXISTS + CREATE TRIGGER.
+--   • set_updated_at() function defined once in Section 2
+--     via CREATE OR REPLACE FUNCTION — safe to reuse here.
+-- ═══════════════════════════════════════════════════════

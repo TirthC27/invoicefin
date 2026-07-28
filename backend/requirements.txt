@@ -1,13 +1,25 @@
-Django==5.2.13
-PyJWT==2.12.1
-certifi==2026.2.25
-cryptography==49.0.0
-dj-database-url==3.1.2
-django-cors-headers==4.9.0
-djangorestframework==3.17.1
+# InvoiceFi Backend Dependencies
+# Install: pip install -r requirements.txt
+#
+# Core Django stack
+Django>=5.2,<6.0
+djangorestframework>=3.16,<4.0
+django-cors-headers>=4.7,<5.0
+python-dotenv>=1.0,<2.0
+
+# JWT validation (Supabase token verification)
+PyJWT>=2.10,<3.0
+cryptography>=44,<47
+
+# HTTP client (Supabase profile API calls)
+requests>=2.32,<3.0
+
+# Blockchain (Polygon Amoy on-chain verification)
+# web3 pulls in its own eth-* dependencies automatically
+web3>=7.0,<8.0
+
+# Deployment additions
 gunicorn==26.0.0
 psycopg2-binary==2.9.12
-python-dotenv==1.2.2
-requests==2.33.1
-web3==7.16.0
+dj-database-url==3.1.2
 whitenoise==6.12.0

@@ -1,33 +1,64 @@
-import { Contract, parseEther, JsonRpcProvider } from 'ethers';
-import { CONTRACT_ADDRESS, DEDICATED_RPC_URL, INVOICE_POOL_ABI, POLYGON_AMOY } from './networkConfig';
-
-const TRANSACTION_CONFIRMATION_TIMEOUT_MS = 90000;
-const WALLET_INTERACTION_TIMEOUT_MS = 20000;
-
-const withTimeout = (promise, ms, code, message) => {
-  let timeoutId;
-  const timeout = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => {
-      const timeoutError = new Error(message);
-      timeoutError.code = code;
-      reject(timeoutError);
-    }, ms);
-  });
-
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
-};
-
-// Dedicated provider for read/gas operations to avoid MetaMask rate limits
-export const dedicatedProvider = new JsonRpcProvider(DEDICATED_RPC_URL, {
-  chainId: POLYGON_AMOY.chainIdDecimal,
-  name: POLYGON_AMOY.chainName,
-});
-dedicatedProvider.pollingInterval = 15000;
+import { Contract, parseEther, formatEther, isAddress } from 'ethers';
+import { CONTRACT_ADDRESS, INVOICE_POOL_ABI, isContractConfigured } from './networkConfig';
 
 /* ── Get contract instance ───────────────────────────────── */
 
-export function getContract(signerOrProvider = dedicatedProvider) {
+export function getContract(signerOrProvider) {
+  if (!isContractConfigured() || !isAddress(CONTRACT_ADDRESS)) {
+    throw new Error('Contract is not configured. Set VITE_CONTRACT_ADDRESS to the deployed InvoicePool address.');
+  }
   return new Contract(CONTRACT_ADDRESS, INVOICE_POOL_ABI, signerOrProvider);
+}
+
+export function formatWalletError(err) {
+  const message = err?.shortMessage || err?.info?.error?.message || err?.reason || err?.message || '';
+  if (err?.code === 4001 || /user rejected/i.test(message)) {
+    return 'Transaction was rejected in MetaMask.';
+  }
+  if (/network|chain/i.test(message)) {
+    return 'Wrong network. Please switch MetaMask to Polygon Amoy.';
+  }
+  if (/could not coalesce|failed to fetch|network error|rpc|unavailable/i.test(message)) {
+    return 'Polygon Amoy RPC is unavailable. Try another RPC in MetaMask or retry shortly.';
+  }
+  if (/revert|execution reverted|call exception/i.test(message)) {
+    return 'Transaction reverted on-chain.';
+  }
+  if (/contract is not configured/i.test(message)) {
+    return message;
+  }
+  return message || 'Transaction failed.';
+}
+
+/* ── Read all pools ──────────────────────────────────────── */
+
+export async function fetchPools(provider) {
+  const contract = getContract(provider);
+  const count = await contract.poolCount();
+  const pools = [];
+
+  for (let i = 1; i <= Number(count); i++) {
+    const p = await contract.getPool(i);
+    pools.push({
+      id: Number(p.id),
+      name: p.name,
+      apyBps: Number(p.apyBps),
+      apyPercent: (Number(p.apyBps) / 100).toFixed(2),
+      durationDays: Number(p.durationDays),
+      totalSize: formatEther(p.totalSize),
+      remainingSize: formatEther(p.remainingSize),
+      totalSizeWei: p.totalSize,
+      remainingSizeWei: p.remainingSize,
+      isSettled: p.isSettled,
+      creator: p.creator,
+      createdAt: Number(p.createdAt),
+      percentFilled: p.totalSize > 0n
+        ? (100 - Number((p.remainingSize * 100n) / p.totalSize))
+        : 100,
+    });
+  }
+
+  return pools;
 }
 
 /* ── Invest in a pool ────────────────────────────────────── */
@@ -82,5 +113,40 @@ export async function investInPool(signer, poolId, amountInMatic) {
         status: receipt.status === 1 ? 'confirmed' : 'failed',
       };
     },
+  };
+}
+
+/* ── Read investor position ──────────────────────────────── */
+
+export async function getMyInvestment(provider, poolId, investorAddress) {
+  const contract = getContract(provider);
+  const [amount, claimed] = await contract.getInvestment(poolId, investorAddress);
+  return {
+    amount: formatEther(amount),
+    amountWei: amount,
+    claimed,
+  };
+}
+
+/* -- Settlement / payout helpers ----------------------------------------- */
+
+export async function settlePool(signer, poolId, settlementFunding = '0') {
+  const contract = getContract(signer);
+  const tx = await contract.settlePool(poolId, { value: parseEther(settlementFunding.toString()) });
+  return tx.wait();
+}
+
+export async function claimPayout(signer, poolId) {
+  const contract = getContract(signer);
+  const tx = await contract.claimPayout(poolId);
+  return tx.wait();
+}
+
+export async function getClaimableAmount(provider, poolId, investorAddress) {
+  const contract = getContract(provider);
+  const amount = await contract.getClaimableAmount(poolId, investorAddress);
+  return {
+    amount: formatEther(amount),
+    amountWei: amount,
   };
 }

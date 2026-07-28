@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { investorApi } from '../../lib/api';
-import { useWallet } from '../../context/WalletContext';
-import { investInPool } from '../../lib/contractService';
+import { useWallet } from '../../context/useWallet';
+import { formatWalletError, investInPool } from '../../lib/contractService';
 import { ArrowLeft, TrendingUp, Clock, Users, Shield, Percent, CheckCircle2, Loader2 } from 'lucide-react';
 
 const POLL_INTERVAL = 10000;
@@ -90,6 +90,7 @@ export default function PoolDetailPage() {
 
   // Debounced server-side calculation
   useEffect(() => {
+    setError('');
     if (!amount || Number(amount) <= 0 || !pool) {
       setCalcData(null);
       return;
@@ -102,7 +103,11 @@ export default function PoolDetailPage() {
         setCalcData(data);
       } catch (err) {
         setCalcData(null);
-        if (err?.error) setError(err.error);
+        if (err?.status === 401 || err?.status === 403) {
+          setError('Your session is not authorized. Please sign in again.');
+        } else if (err?.error) {
+          setError(err.error);
+        }
       }
       setCalcLoading(false);
     }, 400);
@@ -110,20 +115,11 @@ export default function PoolDetailPage() {
   }, [amount, pool]);
 
   const handleInvest = async () => {
-    if (!amount || Number(amount) <= 0 || step !== 'input') return;
+    if (!amount || Number(amount) <= 0 || !calcData || !pool?.is_investable) return;
     setStep('pending');
     setError('');
     try {
-      let result;
-      if (wallet.signer?.isMock) {
-        const dummyTxHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-        result = {
-          txHash: dummyTxHash,
-          wait: async () => { await new Promise(r => setTimeout(r, 1500)); return { blockNumber: Math.floor(Math.random() * 500000) + 12000000, status: 'confirmed' }; },
-        };
-      } else {
-        result = await investInPool(wallet.signer, pool.contract_pool_id, amount);
-      }
+      const result = await investInPool(wallet.signer, pool.contract_pool_id, amount);
       setTxHash(result.txHash);
       setStep('confirming');
       const receipt = await result.wait();
@@ -147,35 +143,32 @@ export default function PoolDetailPage() {
         setError('Transaction reverted on-chain.');
       }
     } catch (err) {
-      console.error('[Investment] Raw transaction error', {
-        err,
-        code: err?.code,
-        message: err?.message,
-        shortMessage: err?.shortMessage,
-        reason: err?.reason,
-        error: err?.error,
-        info: err?.info,
-        data: err?.data,
-        stack: err?.stack,
-      });
-      setStep('error');
+      console.error('[Investment] Raw transaction error', err);
+      
       if (isUserRejection(err)) {
         setStep('input');
         return;
       } else if (isWalletInteractionTimeout(err)) {
-        setError("Your wallet isn't responding. This is often caused by a network connection issue inside your wallet - check for a pending MetaMask notification, or try the network settings fix above.");
+        setStep('error');
+        setError("Your wallet isn't responding. Check for a pending MetaMask notification.");
       } else if (isConfirmationTimeout(err)) {
-        setError("Your transaction was submitted but confirmation is taking longer than expected. Check your wallet's activity tab or the block explorer for status before retrying, to avoid double-investing.");
+        setStep('error');
+        setError("Your transaction was submitted but confirmation is taking longer than expected.");
       } else if (isWalletRpcIssue(err)) {
-        setError("Your wallet's network connection to Polygon Amoy appears to be having issues. Try checking your wallet's network settings (see the banner above), or removing and re-adding the Polygon Amoy network in your wallet.");
+        setStep('error');
+        setError("Your wallet's network connection appears to be having issues.");
       } else if (isGenuineRateLimit(err)) {
+        setStep('error');
         setError('The blockchain network is temporarily busy. Please wait a moment and try again.');
       } else if (isNetworkFetchFailure(err)) {
+        setStep('error');
         setError("Couldn't reach the blockchain network. Check your connection and try again.");
       } else if (isInsufficientFunds(err)) {
+        setStep('error');
         setError('Your wallet has insufficient funds to cover the investment and gas fees.');
       } else {
-        setError('Something went wrong with the transaction. Please try again.');
+        setStep('error');
+        setError(formatWalletError(err));
       }
     }
   };
@@ -185,6 +178,7 @@ export default function PoolDetailPage() {
 
   const filled = pool.percent_filled || 0;
   const remaining = Number(pool.remaining_size || 0);
+  const isInvestable = Boolean(pool.is_investable) && !pool.is_settled && pool.status === 'open' && remaining > 0;
 
   return (
     <>
@@ -289,16 +283,16 @@ export default function PoolDetailPage() {
         {/* Right: Invest CTA */}
         <div className="pd-card">
           <div className="pd-card-title">Invest in This Pool</div>
-          {pool.is_settled ? (
+          {!isInvestable && pool.is_settled ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
               <CheckCircle2 size={32} style={{ marginBottom: 12, color: '#22C55E' }} />
               <p style={{ fontSize: 14, fontWeight: 600 }}>This pool has been settled.</p>
               <p style={{ fontSize: 13 }}>Returns have been distributed to investors.</p>
             </div>
-          ) : filled >= 100 ? (
+          ) : !isInvestable ? (
             <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
               <Shield size={32} style={{ marginBottom: 12, color: '#7C5CFC' }} />
-              <p style={{ fontSize: 14, fontWeight: 600 }}>Fully funded</p>
+              <p style={{ fontSize: 14, fontWeight: 600 }}>{filled >= 100 ? 'Fully funded' : 'Not accepting investments'}</p>
               <p style={{ fontSize: 13 }}>This pool is no longer accepting investments.</p>
             </div>
           ) : (
@@ -308,7 +302,7 @@ export default function PoolDetailPage() {
                 <div style={{ fontSize: 12, color: '#A0A0A8' }}>Est. ROI: {pool.roi}% over {pool.duration_days} days</div>
               </div>
               <button className="pd-invest-btn" onClick={() => setShowInvest(true)}
-                disabled={!wallet?.isConnected}>
+                disabled={!wallet?.isConnected || !isInvestable}>
                 {wallet?.isConnected ? 'Invest Now' : 'Connect Wallet to Invest'}
               </button>
               {!wallet?.isConnected && (
@@ -317,6 +311,7 @@ export default function PoolDetailPage() {
                   Connect Wallet
                 </button>
               )}
+              {wallet?.walletError && <div style={{ color: '#EF4444', fontSize: 12, marginTop: 10 }}>{wallet.walletError}</div>}
             </>
           )}
         </div>
@@ -348,7 +343,7 @@ export default function PoolDetailPage() {
                 {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{error}</div>}
 
                 <button className="pd-invest-btn" style={{ marginTop: 16 }} onClick={handleInvest}
-                  disabled={!amount || Number(amount) <= 0 || Number(amount) > remaining}>
+                  disabled={!amount || Number(amount) <= 0 || Number(amount) > remaining || calcLoading || !calcData || !isInvestable}>
                   Confirm Investment
                 </button>
               </>

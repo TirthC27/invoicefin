@@ -1,64 +1,32 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FileText, LogOut, Plus, RefreshCw, ShieldCheck, TrendingUp } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+/**
+ * ExporterDashboard — Module 1 (full replace of stub)
+ * Shows: 6 metric cards, status donut chart, monthly bar chart, recent activity.
+ */
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  FileText, TrendingUp, DollarSign, CheckCircle2,
+  Clock, Activity, Plus, ChevronRight,
+} from 'lucide-react';
 import { exporterApi } from '../../lib/api';
+import { STATUS_COLOR, fmtAmount, timeAgo } from './exporterUtils';
+import StatusBadge from './StatusBadge';
 
-const emptyInvoice = {
-  buyer_name: '',
-  buyer_email: '',
-  buyer_country: '',
-  invoice_amount: '',
-  due_date: '',
-};
+// ── Mini SVG Donut Chart ────────────────────────────────────────
+function DonutChart({ data }) {
+  const total = data.reduce((s, d) => s + d.value, 0) || 1;
+  const R = 40, cx = 50, cy = 50;
+  const circumference = 2 * Math.PI * R;
 
-function formatAmount(value) {
-  const amount = Number(value || 0);
-  return `${amount.toLocaleString(undefined, { maximumFractionDigits: 4 })} MATIC`;
-}
-
-function getErrorMessage(err, fallback) {
-  if (err?.error) return err.error;
-  if (typeof err === 'string') return err;
-  return fallback;
-}
-
-export default function ExporterDashboard() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-  const [invoices, setInvoices] = useState([]);
-  const [form, setForm] = useState(emptyInvoice);
-  const [poolInputs, setPoolInputs] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const stats = useMemo(() => {
-    const total = invoices.reduce((sum, inv) => sum + Number(inv.invoice_amount || 0), 0);
-    const activePools = invoices.filter((inv) => inv.pool).length;
-    return { total, activePools, invoices: invoices.length };
-  }, [invoices]);
-
-  const loadInvoices = async () => {
-    setError('');
-    setLoading(true);
-    try {
-      setInvoices(await exporterApi.listInvoices());
-    } catch (err) {
-      setError(getErrorMessage(err, 'Could not load invoices.'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadInvoices();
-  }, []);
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
+  const slices = data.filter((d) => d.value > 0).reduce((acc, d) => {
+    const pct = d.value / total;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    return {
+      offset: acc.offset + pct * 100,
+      items: [...acc.items, { ...d, dash, gap, offset: acc.offset }],
+    };
+  }, { offset: 25, items: [] }).items;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -108,137 +76,257 @@ export default function ExporterDashboard() {
   };
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        .ex-root { min-height: 100vh; background: #0B0B0F; color: #fff; font-family: 'Inter', sans-serif; }
-        .ex-topbar { height: 64px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; background: rgba(11,11,15,0.86); backdrop-filter: blur(12px); }
-        .ex-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 800; }
-        .ex-logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #F59E0B; }
-        .ex-user { color: #A0A0A8; font-size: 13px; }
-        .ex-signout, .ex-icon-btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #A0A0A8; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
-        .ex-signout:hover, .ex-icon-btn:hover { border-color: rgba(255,255,255,0.18); color: #fff; }
-        .ex-main { max-width: 1180px; margin: 0 auto; padding: 32px 24px 48px; }
-        .ex-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
-        .ex-title { font-size: 28px; font-weight: 800; margin: 0 0 6px; letter-spacing: 0; }
-        .ex-subtitle { margin: 0; color: #A0A0A8; font-size: 14px; }
-        .ex-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 20px; }
-        .ex-stat, .ex-panel, .ex-table-wrap { background: #151518; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
-        .ex-stat { padding: 18px; display: flex; gap: 14px; align-items: center; }
-        .ex-stat-icon { width: 42px; height: 42px; border-radius: 8px; display: grid; place-items: center; background: rgba(245,158,11,0.1); color: #F59E0B; flex: 0 0 auto; }
-        .ex-label { color: #A0A0A8; font-size: 12px; margin-bottom: 4px; }
-        .ex-value { font-size: 20px; font-weight: 800; }
-        .ex-grid { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 18px; align-items: start; }
-        .ex-panel { padding: 18px; }
-        .ex-panel h2 { font-size: 16px; margin: 0 0 14px; }
-        .ex-field { display: grid; gap: 6px; margin-bottom: 12px; }
-        .ex-field label { color: #A0A0A8; font-size: 12px; }
-        .ex-input { height: 40px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #fff; padding: 0 12px; font-family: inherit; outline: none; }
-        .ex-input:focus { border-color: #F59E0B; box-shadow: 0 0 0 3px rgba(245,158,11,0.12); }
-        .ex-primary { width: 100%; height: 42px; border: 0; border-radius: 8px; background: #F59E0B; color: #111; font-weight: 800; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .ex-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-        .ex-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.24); color: #EF4444; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; }
-        .ex-table-wrap { overflow: auto; }
-        .ex-table { width: 100%; border-collapse: collapse; min-width: 760px; }
-        .ex-table th, .ex-table td { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; font-size: 13px; vertical-align: top; }
-        .ex-table th { color: #A0A0A8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-        .ex-status { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: rgba(160,160,168,0.12); color: #D4D4D8; }
-        .ex-status.verified { background: rgba(34,197,94,0.12); color: #22C55E; }
-        .ex-status.pool { background: rgba(124,92,252,0.14); color: #A78BFA; }
-        .ex-actions { display: grid; gap: 8px; min-width: 210px; }
-        .ex-pool-form { display: grid; grid-template-columns: 1fr 78px 78px; gap: 6px; }
-        .ex-small { height: 34px; font-size: 12px; }
-        .ex-empty { padding: 42px 18px; color: #A0A0A8; text-align: center; }
-        @media (max-width: 900px) {
-          .ex-grid, .ex-stats { grid-template-columns: 1fr; }
-          .ex-header { align-items: flex-start; flex-direction: column; }
-          .ex-topbar { padding: 0 18px; }
-          .ex-user { display: none; }
-        }
-      `}</style>
+    <svg viewBox="0 0 100 100" style={{ width: '100%', maxWidth: 180, display: 'block', margin: '0 auto' }}>
+      {/* Background ring */}
+      <circle cx={cx} cy={cy} r={R} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={14} />
+      {slices.map((s, i) => (
+        <circle key={i} cx={cx} cy={cy} r={R} fill="none"
+          stroke={s.color} strokeWidth={14}
+          strokeDasharray={`${s.dash} ${s.gap}`}
+          strokeDashoffset={-circumference * s.offset / 100 + circumference * 0.25}
+          style={{ transition: 'stroke-dasharray .4s ease', transformOrigin: '50% 50%' }}
+        />
+      ))}
+      <text x={cx} y={cy - 5} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="800">{total}</text>
+      <text x={cx} y={cy + 9} textAnchor="middle" fill="#A0A0A8" fontSize="7">Total</text>
+    </svg>
+  );
+}
 
-      <div className="ex-root">
-        <header className="ex-topbar">
-          <div className="ex-logo"><span className="ex-logo-dot" /> InvoiceFi Exporter</div>
-          <span className="ex-user">{user?.full_name || user?.email}</span>
-          <button className="ex-signout" onClick={handleSignOut}><LogOut size={16} /> Sign Out</button>
-        </header>
-
-        <main className="ex-main">
-          <div className="ex-header">
-            <div>
-              <h1 className="ex-title">Exporter Dashboard</h1>
-              <p className="ex-subtitle">Upload invoices, verify them, and convert eligible invoices into investor pools.</p>
+// ── Mini Bar Chart ──────────────────────────────────────────────
+function BarChart({ data }) {
+  const max = Math.max(...data.map((d) => d.value), 1);
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 100, padding: '0 4px' }}>
+      {data.map((d, i) => {
+        const pct = (d.value / max) * 100;
+        return (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+            <div style={{ width: '100%', height: `${Math.max(4, pct)}%`, borderRadius: '4px 4px 0 0',
+              background: 'linear-gradient(180deg,#7C5CFC,#6B48F5)', minHeight: 4, transition: 'height .5s ease',
+              position: 'relative' }}>
+              {d.value > 0 && (
+                <span style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)',
+                  fontSize: 9, color: '#A0A0A8', whiteSpace: 'nowrap' }}>
+                  {d.value > 1000 ? `${(d.value/1000).toFixed(0)}k` : d.value}
+                </span>
+              )}
             </div>
-            <button className="ex-icon-btn" onClick={loadInvoices} disabled={loading}>
-              <RefreshCw size={16} /> Refresh
-            </button>
+            <span style={{ fontSize: 9, color: '#606068', textAlign: 'center' }}>{d.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function computeMetrics(invoices) {
+  const now = new Date();
+  let totalAmt = 0, activeCount = 0, fundedCount = 0, completedCount = 0, pending = 0;
+  const statusCounts = { Draft:0, Verified:0, Funding:0, Funded:0, Active:0, Completed:0 };
+  const monthly = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return { label: MONTHS[d.getMonth()], value: 0 };
+  });
+
+  for (const inv of invoices) {
+    statusCounts[inv.status] = (statusCounts[inv.status] || 0) + 1;
+    totalAmt += Number(inv.amount);
+    if (inv.status === 'Active')     activeCount++;
+    if (inv.status === 'Funded')     fundedCount++;
+    if (inv.status === 'Completed')  completedCount++;
+    if (['Draft','Verified','Funding'].includes(inv.status)) pending += Number(inv.amount);
+
+    // Monthly funded bar
+    if (inv.status === 'Completed' && inv.created_at) {
+      const invDate = new Date(inv.created_at);
+      const diff = (now.getFullYear() - invDate.getFullYear()) * 12 + (now.getMonth() - invDate.getMonth());
+      if (diff >= 0 && diff < 6) monthly[5 - diff].value += Number(inv.funded_amount || inv.amount);
+    }
+  }
+
+  const donutData = Object.entries(statusCounts)
+    .filter(([, v]) => v > 0)
+    .map(([k, v]) => ({ label: k, value: v, color: STATUS_COLOR[k] || '#A0A0A8' }));
+
+  return { totalAmt, activeCount, fundedCount, completedCount, pending, donutData, monthly, total: invoices.length };
+}
+
+function MetricCard({ label, value, sub, icon, color }) {
+  return (
+    <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '18px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#A0A0A8', letterSpacing: '.2px' }}>{label}</div>
+        <div style={{ width: 34, height: 34, borderRadius: 10, background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {icon}
+        </div>
+      </div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: '#E8E8F0', letterSpacing: '-.5px', marginBottom: 3 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: '#606068' }}>{sub}</div>}
+    </div>
+  );
+}
+
+export default function ExporterDashboard() {
+  const [invoices, setInvoices]   = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading]     = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [invData, actData] = await Promise.all([
+          exporterApi.listInvoices({ per_page: 100 }),
+          exporterApi.getActivities(),
+        ]);
+        setInvoices(invData.invoices ?? []);
+        setActivities(actData ?? []);
+      } catch {
+        setInvoices([]);
+        setActivities([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const m = computeMetrics(invoices);
+
+  const ACTION_COLOR_MAP = { uploaded:'#7C5CFC', verified:'#3B82F6', pool_created:'#8B5CF6', funded:'#22C55E', matured:'#14B8A6', status_changed:'#A0A0A8' };
+
+  return (
+    <div style={{ color: '#fff', fontFamily: "'Inter',sans-serif" }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800, letterSpacing: '-.5px' }}>Dashboard</h2>
+          <p style={{ margin: 0, fontSize: 13.5, color: '#A0A0A8' }}>Your invoice financing overview</p>
+        </div>
+        <Link to="/exporter/upload" style={{
+          height: 40, padding: '0 18px', borderRadius: 12, fontSize: 14, fontWeight: 600,
+          background: 'linear-gradient(135deg,#7C5CFC,#6B48F5)', color: '#fff',
+          textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7,
+          boxShadow: '0 4px 14px rgba(124,92,252,.3)',
+        }}>
+          <Plus size={16} /> Upload Invoice
+        </Link>
+      </div>
+
+      {loading ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
+          <div style={{ textAlign: 'center', color: '#A0A0A8' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid rgba(124,92,252,.2)', borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+            <p style={{ fontSize: 14, margin: 0 }}>Loading dashboard…</p>
+            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Metric cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 14, marginBottom: 24 }}>
+            <MetricCard label="Total Invoices"    value={m.total}               icon={<FileText size={16} color="#7C5CFC" />}    color="#7C5CFC" />
+            <MetricCard label="Active Invoices"   value={m.activeCount}         icon={<Clock size={16} color="#22C55E" />}       color="#22C55E" />
+            <MetricCard label="Funded Invoices"   value={m.fundedCount}         icon={<CheckCircle2 size={16} color="#EC4899" />} color="#EC4899" />
+            <MetricCard label="Completed"         value={m.completedCount}      icon={<CheckCircle2 size={16} color="#14B8A6" />} color="#14B8A6" />
+            <MetricCard label="Total Amount"      value={`$${(m.totalAmt/1000).toFixed(0)}k`} icon={<DollarSign size={16} color="#F59E0B" />} color="#F59E0B" sub="All invoices" />
+            <MetricCard label="Pending Amount"    value={`$${(m.pending/1000).toFixed(0)}k`}  icon={<TrendingUp size={16} color="#8B5CF6" />}  color="#8B5CF6" sub="Unfunded" />
           </div>
 
-          {error && <div className="ex-error">{error}</div>}
+          {/* Charts row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 24 }}>
+            {/* Donut chart */}
+            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '20px' }}>
+              <h4 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 700, color: '#E0E0E8' }}>Invoice Status</h4>
+              <DonutChart data={m.donutData} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 14 }}>
+                {m.donutData.map((d) => (
+                  <div key={d.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: 2, background: d.color }} />
+                      <span style={{ color: '#A0A0A8' }}>{d.label}</span>
+                    </div>
+                    <span style={{ fontWeight: 700, color: '#E0E0E8' }}>{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-          <section className="ex-stats">
-            <div className="ex-stat"><span className="ex-stat-icon"><FileText size={20} /></span><div><div className="ex-label">Invoices</div><div className="ex-value">{stats.invoices}</div></div></div>
-            <div className="ex-stat"><span className="ex-stat-icon"><TrendingUp size={20} /></span><div><div className="ex-label">Invoice Value</div><div className="ex-value">{formatAmount(stats.total)}</div></div></div>
-            <div className="ex-stat"><span className="ex-stat-icon"><ShieldCheck size={20} /></span><div><div className="ex-label">Pools Created</div><div className="ex-value">{stats.activePools}</div></div></div>
-          </section>
+            {/* Bar chart */}
+            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '20px' }}>
+              <h4 style={{ margin: '0 0 20px', fontSize: 14, fontWeight: 700, color: '#E0E0E8' }}>Monthly Funding (last 6 months)</h4>
+              <BarChart data={m.monthly} />
+              <div style={{ marginTop: 8, textAlign: 'center', fontSize: 11, color: '#505058' }}>
+                Completed invoice value per month
+              </div>
+            </div>
+          </div>
 
-          <div className="ex-grid">
-            <section className="ex-panel">
-              <h2>Upload Invoice</h2>
-              <form onSubmit={handleSubmit}>
-                <div className="ex-field"><label>Buyer name</label><input className="ex-input" value={form.buyer_name} onChange={(e) => setForm({ ...form, buyer_name: e.target.value })} required /></div>
-                <div className="ex-field"><label>Buyer email</label><input className="ex-input" type="email" value={form.buyer_email} onChange={(e) => setForm({ ...form, buyer_email: e.target.value })} /></div>
-                <div className="ex-field"><label>Buyer country</label><input className="ex-input" value={form.buyer_country} onChange={(e) => setForm({ ...form, buyer_country: e.target.value })} /></div>
-                <div className="ex-field"><label>Invoice amount (MATIC)</label><input className="ex-input" type="number" step="0.00000001" min="0" value={form.invoice_amount} onChange={(e) => setForm({ ...form, invoice_amount: e.target.value })} required /></div>
-                <div className="ex-field"><label>Due date</label><input className="ex-input" type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} required /></div>
-                <button className="ex-primary" disabled={saving}><Plus size={16} /> {saving ? 'Uploading...' : 'Upload Invoice'}</button>
-              </form>
-            </section>
-
-            <section className="ex-table-wrap">
-              {loading ? (
-                <div className="ex-empty">Loading invoices...</div>
-              ) : invoices.length === 0 ? (
-                <div className="ex-empty">No invoices uploaded yet.</div>
-              ) : (
-                <table className="ex-table">
+          {/* Recent invoices + activity */}
+          <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16 }}>
+            {/* Invoice preview table */}
+            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Recent Invoices</h4>
+                <Link to="/exporter/invoices" style={{ fontSize: 13, color: '#7C5CFC', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
+                  View all <ChevronRight size={14} />
+                </Link>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
-                    <tr><th>Buyer</th><th>Amount</th><th>Due</th><th>Status</th><th>Pool</th><th>Actions</th></tr>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+                      {['Invoice','Buyer','Amount','Status'].map((h) => (
+                        <th key={h} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#606068', textTransform: 'uppercase', letterSpacing: '.5px' }}>{h}</th>
+                      ))}
+                    </tr>
                   </thead>
                   <tbody>
-                    {invoices.map((invoice) => (
-                      <tr key={invoice.id}>
-                        <td><strong>{invoice.buyer_name}</strong><br /><span className="ex-label">{invoice.buyer_email || invoice.buyer_country || 'No buyer details'}</span></td>
-                        <td>{formatAmount(invoice.invoice_amount)}</td>
-                        <td>{invoice.due_date}</td>
-                        <td><span className={`ex-status ${invoice.status === 'VERIFIED' ? 'verified' : ''} ${invoice.status === 'POOL_CREATED' ? 'pool' : ''}`}>{invoice.status.replace('_', ' ')}</span></td>
-                        <td>{invoice.pool_name || '-'}</td>
-                        <td>
-                          <div className="ex-actions">
-                            {invoice.status === 'UPLOADED' && <button className="ex-icon-btn ex-small" onClick={() => verifyInvoice(invoice.id)}>Verify</button>}
-                            {invoice.status === 'VERIFIED' && (
-                              <>
-                                <div className="ex-pool-form">
-                                  <input className="ex-input ex-small" placeholder="Pool name" value={poolInputs[invoice.id]?.name || ''} onChange={(e) => updatePoolInput(invoice.id, 'name', e.target.value)} />
-                                  <input className="ex-input ex-small" placeholder="APY" value={poolInputs[invoice.id]?.apy || ''} onChange={(e) => updatePoolInput(invoice.id, 'apy', e.target.value)} />
-                                  <input className="ex-input ex-small" placeholder="Days" value={poolInputs[invoice.id]?.duration_days || ''} onChange={(e) => updatePoolInput(invoice.id, 'duration_days', e.target.value)} />
-                                </div>
-                                <button className="ex-icon-btn ex-small" onClick={() => createPool(invoice)}>Create Pool</button>
-                              </>
-                            )}
-                            {invoice.status === 'POOL_CREATED' && <span className="ex-label">Pool #{invoice.pool_contract_id}</span>}
-                          </div>
+                    {invoices.slice(0, 5).map((inv) => (
+                      <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <Link to={`/exporter/invoices/${inv.id}`} style={{ color: '#E0E0E8', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>{inv.invoice_number}</Link>
                         </td>
+                        <td style={{ padding: '12px 16px', color: '#A0A0A8', fontSize: 12.5 }}>{inv.buyer_company}</td>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13 }}>{fmtAmount(inv.amount, inv.currency)}</td>
+                        <td style={{ padding: '12px 16px' }}><StatusBadge status={inv.status} /></td>
                       </tr>
                     ))}
+                    {invoices.length === 0 && (
+                      <tr><td colSpan={4} style={{ padding: '30px', textAlign: 'center', color: '#505058', fontSize: 13 }}>No invoices yet. Upload your first invoice!</td></tr>
+                    )}
                   </tbody>
                 </table>
-              )}
-            </section>
+              </div>
+            </div>
+
+            {/* Activity feed */}
+            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+                <Activity size={15} color="#7C5CFC" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Recent Activity</h4>
+              </div>
+              <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {activities.length > 0 ? activities.slice(0, 8).map((a) => {
+                  const col = ACTION_COLOR_MAP[a.action_type] || '#A0A0A8';
+                  return (
+                    <div key={a.id} style={{ display: 'flex', gap: 10, padding: '9px 6px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: col, marginTop: 6, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ margin: '0 0 2px', fontSize: 12.5, color: '#D0D0D8', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{a.description}</p>
+                        <span style={{ fontSize: 11, color: '#505058' }}>{timeAgo(a.timestamp)}</span>
+                      </div>
+                    </div>
+                  );
+                }) : (
+                  <p style={{ color: '#505058', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No activity yet.</p>
+                )}
+              </div>
+            </div>
           </div>
-        </main>
-      </div>
-    </>
+        </>
+      )}
+    </div>
   );
 }

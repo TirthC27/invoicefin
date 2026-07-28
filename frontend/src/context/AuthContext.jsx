@@ -1,10 +1,29 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+import { AuthContext } from './authContextValue';
+import { useAuth } from './useAuth';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+
+/**
+ * Helper to construct a consistent user object from session metadata
+ * and optional backend profile data.
+ */
+function buildUserFromSession(session, backendData = null) {
+  if (!session?.user) return null;
+  const metadata = session.user.user_metadata || {};
+  const rawRole = backendData?.role || metadata.role || 'INVESTOR';
+
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    role: String(rawRole).toUpperCase(),
+    status: backendData?.status || 'ACTIVE',
+    full_name: backendData?.full_name || metadata.full_name || session.user.email?.split('@')[0],
+    wallet_address: backendData?.wallet_address || null,
+  };
+}
 
 /**
  * AuthProvider wraps the app and provides:
@@ -17,25 +36,61 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [backendAuthError, setBackendAuthError] = useState(null);
 
-  // Fetch user profile from backend (includes local AppUser role)
-  const fetchUserProfile = useCallback(async (accessToken) => {
+  /**
+   * Fetch user profile from backend Django API.
+   * - Sets a Supabase-based fallback user FIRST so the app is never blocked.
+   * - Enriches with backend data (role, status, wallet) on success.
+   * - On genuine 401/403: token is invalid → clear user + surface error.
+   * - On network error / 5xx: keep fallback user, log warning (don't block login).
+   */
+  const fetchUserProfile = useCallback(async (currentSession) => {
+    if (!currentSession?.access_token || !currentSession?.user) return null;
+
+    // Immediately set a Supabase-based user so ProtectedRoute never blocks
+    // on a valid session while the backend call is in flight.
+    const fallbackUser = buildUserFromSession(currentSession, null);
+    setUser(fallbackUser);
+    setBackendAuthError(null);
+
     try {
       const resp = await fetch(`${API_BASE}/user/me/`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${currentSession.access_token}`,
           'Content-Type': 'application/json',
         },
       });
+
       if (resp.ok) {
-        const data = await resp.json();
-        setUser(data);
-        return data;
+        const text = await resp.text();
+        const data = text ? JSON.parse(text) : {};
+        const enrichedUser = buildUserFromSession(currentSession, data);
+        setUser(enrichedUser);
+        setBackendAuthError(null);
+        return enrichedUser;
       }
+
+      if (resp.status === 401 || resp.status === 403) {
+        // Genuine auth failure: token is invalid/expired on the backend.
+        let data = {};
+        try { data = await resp.json(); } catch { /* ignore */ }
+        const errMsg = data?.error || data?.detail || 'Your session is not authorized. Please sign in again.';
+        console.warn('[Auth] Backend auth rejected:', errMsg);
+        setUser(null);
+        setBackendAuthError(errMsg);
+        return null;
+      }
+
+      // 5xx or unexpected: keep the fallback user, warn in console.
+      console.warn('[Auth] Backend /user/me/ returned', resp.status, '— using Supabase session as fallback');
+      return fallbackUser;
+
     } catch (err) {
-      console.error('[Auth] Failed to fetch user profile:', err);
+      // Network error (backend offline, CORS, etc.): keep fallback user.
+      console.warn('[Auth] Could not reach backend /user/me/ — using Supabase session as fallback:', err.message);
+      return fallbackUser;
     }
-    return null;
   }, []);
 
   // Initialize auth state
@@ -47,7 +102,9 @@ export function AuthProvider({ children }) {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (mounted && currentSession) {
           setSession(currentSession);
-          await fetchUserProfile(currentSession.access_token);
+          await fetchUserProfile(currentSession);
+        } else if (mounted) {
+          setBackendAuthError(null);
         }
       } catch (err) {
         console.error('[Auth] Init error:', err);
@@ -58,16 +115,17 @@ export function AuthProvider({ children }) {
 
     initAuth();
 
-    // Listen for auth state changes
+    // Listen for auth state changes (fires on sign-in, sign-out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
         setSession(newSession);
 
         if (newSession) {
-          await fetchUserProfile(newSession.access_token);
+          await fetchUserProfile(newSession);
         } else {
           setUser(null);
+          setBackendAuthError(null);
         }
         setLoading(false);
       }
@@ -83,6 +141,7 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
+    setBackendAuthError(null);
   }, []);
 
   /**
@@ -105,7 +164,9 @@ export function AuthProvider({ children }) {
     loading,
     signOut,
     getDashboardPath,
-    isAuthenticated: !!session,
+    backendAuthError,
+    backendReady: !!session && !!user && !backendAuthError,
+    isAuthenticated: !!session && !!user,
     accessToken: session?.access_token || null,
   };
 
@@ -122,7 +183,7 @@ export function AuthProvider({ children }) {
  * Optionally restricts by role(s).
  */
 export function ProtectedRoute({ children, allowedRoles }) {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, backendAuthError } = useAuth();
 
   if (loading) {
     return (
@@ -145,9 +206,7 @@ export function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (!isAuthenticated) {
-    // Redirect to login
-    window.location.href = '/login';
-    return null;
+    return <Navigate to="/login" replace state={backendAuthError ? { authError: backendAuthError } : undefined} />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
@@ -169,4 +228,3 @@ export function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-export default AuthContext;

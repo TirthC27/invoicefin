@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useWallet } from '../../context/WalletContext';
+import { Routes, Route, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
+import { useWallet } from '../../context/useWallet';
 import {
   LayoutDashboard, Briefcase, TrendingUp, Shield,
-  LogOut, Bell, ChevronLeft, Menu, Wallet, AlertTriangle
+  LogOut, ChevronLeft, Menu, Wallet
 } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import InvestorDashboard from './InvestorDashboard';
 import PoolsPage from './PoolsPage';
 import PoolDetailPage from './PoolDetailPage';
@@ -118,7 +119,11 @@ export default function InvestorLayout() {
                 <Wallet size={16} />
                 {wallet?.isConnected ? wallet.truncatedAddress : 'Connect Wallet'}
               </button>
-              <button className="inv-topbar-btn" style={{ padding: '0 10px' }}><Bell size={18} /></button>
+              <NotificationBell
+                buttonClassName="inv-topbar-btn"
+                buttonStyle={{ padding: '0 10px' }}
+                accent="#7C5CFC"
+              />
             </div>
           </div>
           {wallet?.walletRpcWarning && (
@@ -129,11 +134,13 @@ export default function InvestorLayout() {
           )}
           <div className="inv-page">
             <Routes>
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<InvestorDashboard />} />
               <Route path="pools" element={<PoolsPage />} />
               <Route path="pools/:id" element={<PoolDetailPage />} />
               <Route path="portfolio" element={<PortfolioPage />} />
               <Route path="recovery" element={<RecoveryViewPage />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </div>
         </main>

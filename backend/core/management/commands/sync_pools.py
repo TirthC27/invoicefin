@@ -56,7 +56,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         contract_address = os.getenv("CONTRACT_ADDRESS")
-        rpc_url = (os.getenv("POLYGON_AMOY_RPC_URL") or "").strip()
+        rpc_url = os.getenv("POLYGON_AMOY_RPC_URL", "https://polygon-amoy.drpc.org")
 
         if not contract_address:
             self.stderr.write(self.style.ERROR("CONTRACT_ADDRESS not set in .env"))

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { lawfirmApi } from '../../lib/api';
 import {
@@ -62,7 +62,7 @@ export default function CaseDetailPage() {
   const [showDocModal, setShowDocModal] = useState(false);
   const [docNotes, setDocNotes] = useState('');
 
-  const fetchCase = async () => {
+  const fetchCase = useCallback(async () => {
     try {
       const data = await lawfirmApi.getCaseDetail(id);
       setCaseData(data.case);
@@ -72,9 +72,9 @@ export default function CaseDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { fetchCase(); }, [id]);
+  useEffect(() => { fetchCase(); }, [fetchCase]);
 
   const handleAction = async (eventType, notes = '') => {
     setActionLoading(eventType);

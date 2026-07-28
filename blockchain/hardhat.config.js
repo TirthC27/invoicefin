@@ -12,13 +12,13 @@ export default {
   solidity: "0.8.24",
   networks: {
     amoy: {
-      url: process.env.POLYGON_AMOY_RPC_URL,
+      url: process.env.POLYGON_AMOY_RPC_URL || "https://polygon-amoy.drpc.org",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {
     apiKey: {
-      amoy: process.env.POLYGONSCAN_API_KEY || "",
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || process.env.ETHERSCAN_API_KEY || "",
     },
     customChains: [
       {

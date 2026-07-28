@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Routes, Route, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { Routes, Route, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useAuth } from '../../context/useAuth';
 import {
   LayoutDashboard, Scale, FileText, Users, Building2,
-  Settings, LogOut, Bell, ChevronLeft, Menu
+  Settings, LogOut, ChevronLeft, Menu
 } from 'lucide-react';
+import NotificationBell from '../../components/NotificationBell';
 import AdminDashboard from './AdminDashboard';
 import LawFirmsPage from './LawFirmsPage';
 import RecoveryCasesPage from './RecoveryCasesPage';
@@ -127,16 +128,18 @@ export default function AdminLayout() {
             </button>
             <div className="admin-topbar-title">Admin Portal</div>
             <div className="admin-topbar-actions">
-              <button className="admin-topbar-btn"><Bell size={18} /></button>
+              <NotificationBell buttonClassName="admin-topbar-btn" accent="#7C5CFC" />
             </div>
           </div>
 
           <div className="admin-page">
             <Routes>
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="law-firms" element={<LawFirmsPage />} />
               <Route path="recovery-cases" element={<RecoveryCasesPage />} />
               <Route path="users" element={<UsersPage />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Routes>
           </div>
         </main>

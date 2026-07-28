@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { investorApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { Clock, TrendingUp, AlertTriangle, Shield, CheckCircle2, ChevronRight } from 'lucide-react';
 
 const POLL_INTERVAL = 10000;
@@ -16,10 +16,12 @@ const STATUS_STYLES = {
 
 function Countdown({ targetDate }) {
   const [timeLeft, setTimeLeft] = useState('');
+  const [isUrgent, setIsUrgent] = useState(false);
 
   useEffect(() => {
     const calc = () => {
       const diff = new Date(targetDate) - Date.now();
+      setIsUrgent(diff > 0 && diff < 86400000 * 3);
       if (diff <= 0) { setTimeLeft('Due'); return; }
       const days = Math.floor(diff / 86400000);
       const hours = Math.floor((diff % 86400000) / 3600000);
@@ -32,8 +34,6 @@ function Countdown({ targetDate }) {
     const interval = setInterval(calc, 60000);
     return () => clearInterval(interval);
   }, [targetDate]);
-
-  const isUrgent = new Date(targetDate) - Date.now() < 86400000 * 3;
   return (
     <span style={{ color: timeLeft === 'Due' ? '#EF4444' : isUrgent ? '#F59E0B' : '#A0A0A8', fontWeight: 600, fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
       <Clock size={14} /> {timeLeft}
@@ -184,7 +184,7 @@ export default function PortfolioPage() {
       {/* Auto-return toast animation (Module 9) */}
       <AnimatePresence>
         {toast && (
-          <motion.div className="pf-toast"
+          <Motion.div className="pf-toast"
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
@@ -194,7 +194,7 @@ export default function PortfolioPage() {
               <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>Return Received!</div>
               <div style={{ fontSize: 13, color: '#A0A0A8' }}>{toast.pool}: <span style={{ color: '#22C55E', fontWeight: 600 }}>+{toast.profit} ETH</span></div>
             </div>
-          </motion.div>
+          </Motion.div>
         )}
       </AnimatePresence>
     </>

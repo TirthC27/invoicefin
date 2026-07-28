@@ -1,143 +1,176 @@
-import os
-import jwt
 import functools
+import logging
+import os
+
+import jwt
 from rest_framework import authentication, exceptions
 from rest_framework.response import Response
 
+from .user_sync import fetch_supabase_profile, resolve_user_identity
 
-APP_ROLES = {'INVESTOR', 'EXPORTER', 'LAW_FIRM', 'ADMIN'}
-
-
-def normalize_role(value, default='INVESTOR'):
-    role = (value or '').upper()
-    return role if role in APP_ROLES else default
+logger = logging.getLogger(__name__)
 
 
-# ── Simple user object attached to request.user ──────────
 class SimpleUser:
     """
-    Lightweight user object built from Supabase JWT claims,
-    optionally enriched with local AppUser data.
+    Lightweight user object built from a validated Supabase JWT, optionally
+    enriched with local AppUser/profile data.
     """
-    def __init__(self, uid, email, role='INVESTOR', status='ACTIVE', app_user=None):
-        self.id = uid               # Supabase auth.users.id (UUID string)
+
+    def __init__(self, uid, email, role="INVESTOR", status="ACTIVE", full_name="", profile=None, app_user=None):
+        self.id = uid
         self.email = email
-        self.role = role            # INVESTOR | EXPORTER | LAW_FIRM | ADMIN
-        self.status = status        # ACTIVE | SUSPENDED
-        self.app_user = app_user    # Local AppUser model instance (or None)
+        self.role = role
+        self.status = status
+        self.full_name = full_name
+        self.profile = profile
+        self.app_user = app_user
         self.is_authenticated = True
 
 
-# ── Supabase JWT Authentication ──────────────────────────
 class SupabaseJWTAuthentication(authentication.BaseAuthentication):
     """
-    Validates Supabase JWT tokens (HS256 or asymmetric).
-    If a local AppUser record exists for the user's supabase_uid,
-    the role and status are read from that record instead of JWT claims.
+    Validates current Supabase JWT tokens and maps them to InvoiceFi app roles.
+    Supabase's standard JWT role=authenticated is intentionally ignored as an
+    app authorization role.
+
+    DRF convention:
+      - Return None  → no credentials present; fall through to permission checks.
+      - Raise        → credentials present but invalid; stop the request.
     """
 
     def authenticate(self, request):
-        auth_header = request.META.get('HTTP_AUTHORIZATION')
-        if not auth_header or not auth_header.startswith('Bearer '):
+        auth_header = request.META.get("HTTP_AUTHORIZATION")
+        if not auth_header:
             return None
+            
+        if not auth_header.startswith("Bearer "):
+            logger.info("Supabase auth failed: malformed Bearer token path=%s", request.path)
+            raise exceptions.AuthenticationFailed("Malformed Authorization header. Expected Bearer token.")
 
-        token = auth_header.split(' ')[1]
+        parts = auth_header.split()
+        if len(parts) != 2 or not parts[1]:
+            logger.info("Supabase auth failed: malformed Bearer token path=%s", request.path)
+            raise exceptions.AuthenticationFailed("Malformed Authorization header. Expected Bearer token.")
+        token = parts[1]
 
         try:
-            # Peek at the token header to determine the algorithm
             unverified_header = jwt.get_unverified_header(token)
-            alg = unverified_header.get('alg', 'HS256')
+            alg = unverified_header.get("alg", "HS256")
+            supabase_url = os.getenv("SUPABASE_URL", "").rstrip("/")
+            issuer = f"{supabase_url}/auth/v1" if supabase_url else None
+            decode_kwargs = {
+                "algorithms": [alg] if alg.startswith(("ES", "RS", "PS")) else ["HS256", "HS384", "HS512"],
+                "audience": "authenticated",
+                "options": {"verify_iss": bool(issuer)},
+            }
+            if issuer:
+                decode_kwargs["issuer"] = issuer
 
-            if alg.startswith('ES') or alg.startswith('RS') or alg.startswith('PS'):
-                # Asymmetric algorithm — fetch public key from Supabase JWKS
-                supabase_url = os.getenv('SUPABASE_URL', '')
-                jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
-
+            if alg.startswith(("ES", "RS", "PS")):
+                if not supabase_url:
+                    raise exceptions.AuthenticationFailed("SUPABASE_URL not configured.")
                 from jwt import PyJWKClient
-                jwk_client = PyJWKClient(jwks_url)
-                signing_key = jwk_client.get_signing_key_from_jwt(token)
 
-                decoded = jwt.decode(
-                    token,
-                    signing_key.key,
-                    algorithms=[alg],
-                    audience="authenticated",
-                )
+                jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+                signing_key = PyJWKClient(jwks_url).get_signing_key_from_jwt(token)
+                decoded = jwt.decode(token, signing_key.key, **decode_kwargs)
             else:
-                # Symmetric algorithm (HS256, HS384, etc.)
-                jwt_secret = os.getenv('SUPABASE_JWT_SECRET')
+                jwt_secret = os.getenv("SUPABASE_JWT_SECRET")
                 if not jwt_secret:
-                    raise exceptions.AuthenticationFailed('SUPABASE_JWT_SECRET not configured.')
+                    raise exceptions.AuthenticationFailed(
+                        "SUPABASE_JWT_SECRET not configured on the backend."
+                    )
+                # Supabase JWT secrets are base64-encoded in the dashboard.
+                # PyJWT needs the raw bytes for HS256 verification —
+                # passing the base64 string causes InvalidSignatureError.
+                import base64 as _b64
+                try:
+                    # Add padding if needed, then decode
+                    padded = jwt_secret + "=" * (4 - len(jwt_secret) % 4)
+                    signing_secret = _b64.b64decode(padded)
+                except Exception:
+                    # Not valid base64 — treat as a plain-text secret (legacy)
+                    signing_secret = jwt_secret.encode() if isinstance(jwt_secret, str) else jwt_secret
+                decoded = jwt.decode(token, signing_secret, **decode_kwargs)
 
-                decoded = jwt.decode(
-                    token, jwt_secret,
-                    algorithms=["HS256", "HS384", "HS512"],
-                    audience="authenticated",
-                )
+            user_id = decoded.get("sub")
+            if not user_id:
+                logger.info("Supabase auth failed: token missing subject path=%s", request.path)
+                raise exceptions.AuthenticationFailed("Token missing subject.")
 
-            user_id = decoded.get('sub')
-            email = decoded.get('email', '')
+            profile = fetch_supabase_profile(user_id)
+            identity = resolve_user_identity(decoded, profile)
 
-            # Try to enrich with local AppUser data. Supabase's built-in
-            # "role" claim is usually "authenticated", not our app role.
-            metadata = decoded.get('user_metadata') or {}
-            app_metadata = decoded.get('app_metadata') or {}
-            role = normalize_role(
-                metadata.get('role') or app_metadata.get('role') or decoded.get('app_role')
+            if identity["status"] == "SUSPENDED":
+                logger.info("Supabase auth failed: suspended user user=%s path=%s", user_id, request.path)
+                raise exceptions.AuthenticationFailed("Your account has been suspended.")
+
+            # Guarantee an AppUser record always exists for every authenticated request
+            app_user = identity.get("app_user")
+            if not app_user:
+                from .user_sync import sync_app_user_from_identity
+                app_user = sync_app_user_from_identity(identity, explicit_profile=bool(profile))
+                identity["app_user"] = app_user
+
+            user = SimpleUser(
+                identity["id"],
+                identity["email"],
+                identity["role"],
+                identity["status"],
+                identity["full_name"],
+                identity["profile"],
+                identity["app_user"],
             )
-            status = 'ACTIVE'
-            app_user = None
-
-            try:
-                from core.models import AppUser
-                app_user = AppUser.objects.get(supabase_uid=user_id)
-                role = app_user.role
-                status = app_user.status
-            except Exception:
-                pass  # No local record — fall back to JWT claims
-
-            # Reject suspended users
-            if status == 'SUSPENDED':
-                raise exceptions.AuthenticationFailed('Your account has been suspended.')
-
-            user = SimpleUser(user_id, email, role, status, app_user)
-            return (user, token)
+            logger.debug(
+                "Supabase auth OK: user=%s role=%s path=%s",
+                user_id, identity["role"], request.path,
+            )
+            return user, token
 
         except jwt.ExpiredSignatureError:
-            raise exceptions.AuthenticationFailed('Token has expired.')
+            logger.info("Supabase auth failed: expired token path=%s", request.path)
+            raise exceptions.AuthenticationFailed("Token has expired. Please sign in again.")
+        except jwt.InvalidSignatureError:
+            logger.info("Supabase auth failed: invalid signature path=%s", request.path)
+            raise exceptions.AuthenticationFailed("Invalid token signature.")
+        except (jwt.InvalidAudienceError, jwt.InvalidIssuerError) as exc:
+            logger.info("Supabase auth failed: audience/issuer mismatch path=%s detail=%s", request.path, exc)
+            raise exceptions.AuthenticationFailed("Token audience or issuer is invalid.")
         except jwt.DecodeError:
-            raise exceptions.AuthenticationFailed('Invalid token.')
+            logger.info("Supabase auth failed: invalid token path=%s", request.path)
+            raise exceptions.AuthenticationFailed("Invalid token.")
         except exceptions.AuthenticationFailed:
             raise
-        except Exception as e:
-            raise exceptions.AuthenticationFailed(f'Authentication failed: {str(e)}')
+        except Exception as exc:
+            logger.exception("Supabase auth failed unexpectedly path=%s", request.path)
+            raise exceptions.AuthenticationFailed(f"Authentication error: {exc}")
+
+    def authenticate_header(self, request):
+        """Return WWW-Authenticate header so DRF sends 401 (not 403) for unauthenticated requests."""
+        return 'Bearer realm="invoicefin"'
 
 
-# ── Role-based access decorator ─────────────────────────
 def require_role(*allowed_roles):
-    """
-    Decorator for DRF function-based views that restricts access
-    to users with one of the specified roles.
+    """Restrict a DRF function view to one or more InvoiceFi app roles."""
 
-    Usage:
-        @api_view(['GET'])
-        @authentication_classes([SupabaseJWTAuthentication])
-        @permission_classes([IsAuthenticated])
-        @require_role('ADMIN')
-        def admin_only_view(request):
-            ...
-
-        @require_role('ADMIN', 'LAW_FIRM')
-        def multi_role_view(request):
-            ...
-    """
     def decorator(view_func):
         @functools.wraps(view_func)
         def wrapped(request, *args, **kwargs):
-            user_role = getattr(request.user, 'role', None)
+            user_role = getattr(request.user, "role", None)
             if user_role not in allowed_roles:
+                logger.info(
+                    "Role denied: user=%s role=%s allowed=%s path=%s",
+                    getattr(request.user, "id", None),
+                    user_role,
+                    allowed_roles,
+                    getattr(request, "path", ""),
+                )
                 return Response(
-                    {'error': f'Access denied. Required role: {", ".join(allowed_roles)}'},
+                    {
+                        "error": f"Access denied. Required role: {', '.join(allowed_roles)}",
+                        "your_role": user_role,
+                    },
                     status=403,
                 )
             return view_func(request, *args, **kwargs)

@@ -1,5 +1,5 @@
 """
-blockchain_service.py — On-chain transaction verification via Web3.
+blockchain_service.py - On-chain pool creation and investment verification.
 
 Reuses the same RPC / contract pattern already established in
 core/management/commands/sync_pools.py.
@@ -10,13 +10,8 @@ import logging
 from decimal import Decimal
 from dataclasses import dataclass
 
-from web3 import Web3
-from web3.exceptions import TransactionNotFound
-from web3.logs import DISCARD
-
 logger = logging.getLogger(__name__)
 
-# ── Invested event ABI (matches InvoicePool.sol) ──────────────────────────
 INVESTED_EVENT_ABI = {
     "anonymous": False,
     "inputs": [
@@ -28,8 +23,31 @@ INVESTED_EVENT_ABI = {
     "type": "event",
 }
 
-# Minimal contract ABI — only the Invested event
-CONTRACT_ABI = [INVESTED_EVENT_ABI]
+POOL_CREATED_EVENT_ABI = {
+    "anonymous": False,
+    "inputs": [
+        {"indexed": True, "name": "poolId", "type": "uint256"},
+        {"indexed": False, "name": "name", "type": "string"},
+        {"indexed": False, "name": "totalSize", "type": "uint256"},
+    ],
+    "name": "PoolCreated",
+    "type": "event",
+}
+
+CREATE_POOL_FUNCTION_ABI = {
+    "inputs": [
+        {"internalType": "string", "name": "_name", "type": "string"},
+        {"internalType": "uint256", "name": "_apyBps", "type": "uint256"},
+        {"internalType": "uint256", "name": "_durationDays", "type": "uint256"},
+        {"internalType": "uint256", "name": "_totalSize", "type": "uint256"},
+    ],
+    "name": "createPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function",
+}
+
+CONTRACT_ABI = [INVESTED_EVENT_ABI, POOL_CREATED_EVENT_ABI, CREATE_POOL_FUNCTION_ABI]
 
 POOL_WRITE_ABI = [
     {
@@ -56,11 +74,11 @@ POOL_WRITE_ABI = [
 
 @dataclass
 class VerifiedInvestment:
-    """Result of a successful on-chain verification."""
-    investor: str           # checksummed wallet address
-    pool_id: int            # contract pool ID
-    amount_wei: int         # investment amount in wei
-    amount_matic: Decimal   # investment amount in POL (18 decimals)
+    """Result of a successful on-chain investment verification."""
+    investor: str
+    pool_id: int
+    amount_wei: int
+    amount_matic: Decimal
     block_number: int
     tx_hash: str
 
@@ -72,64 +90,107 @@ class CreatedPool:
     tx_hash: str
     block_number: int
 
-_w3_instance = None
 
-def get_web3() -> Web3:
+def _load_web3():
+    try:
+        from web3 import Web3
+        from web3.exceptions import TransactionNotFound
+        from web3.logs import DISCARD
+    except ImportError as exc:
+        raise ValueError(
+            "web3 is not installed. Install the backend web3 dependency before using blockchain endpoints."
+        ) from exc
+    return Web3, TransactionNotFound, DISCARD
+
+
+def get_web3():
     """Return a connected Web3 instance using env-configured RPC URL."""
-    global _w3_instance
-    if _w3_instance is None:
-        rpc_url = (os.getenv("POLYGON_AMOY_RPC_URL") or "").strip()
-        if not rpc_url:
-            raise ValueError("POLYGON_AMOY_RPC_URL not configured in environment.")
-        _w3_instance = Web3(Web3.HTTPProvider(rpc_url))
-    return _w3_instance
+    Web3, _, _ = _load_web3()
+    rpc_url = os.getenv(
+        "POLYGON_AMOY_RPC_URL",
+        "https://polygon-amoy.drpc.org",
+    )
+    w3 = Web3(Web3.HTTPProvider(rpc_url))
+    if not w3.is_connected():
+        raise ConnectionError(f"Cannot connect to RPC: {rpc_url}")
+    expected_chain_id = int(os.getenv("POLYGON_AMOY_CHAIN_ID", "80002"))
+    chain_id = w3.eth.chain_id
+    if chain_id != expected_chain_id:
+        raise ConnectionError(f"RPC chain_id {chain_id} does not match expected Polygon Amoy chain_id {expected_chain_id}.")
+    return w3
 
 
-def create_pool_on_chain(
-    name: str,
-    apy_bps: int,
-    duration_days: int,
-    total_size_matic: Decimal,
-) -> CreatedPool:
-    """Create an InvoicePool pool on Polygon Amoy and return its contract ID."""
+def create_pool_on_chain(name: str, apy: Decimal, duration_days: int, total_size: Decimal) -> CreatedPool:
+    """
+    Create the investor-facing pool on the InvoicePool contract.
+
+    The Solidity contract restricts pool creation to the contract owner, so the
+    backend must be configured with that owner's private key. If it is not, fail
+    clearly rather than creating a database-only pool investors cannot fund.
+    """
+    Web3, _, DISCARD = _load_web3()
     contract_address = os.getenv("CONTRACT_ADDRESS")
-    private_key = os.getenv("BLOCKCHAIN_PRIVATE_KEY") or os.getenv("PRIVATE_KEY")
+    private_key = os.getenv("CONTRACT_OWNER_PRIVATE_KEY") or os.getenv("PRIVATE_KEY")
+
     if not contract_address:
         raise ValueError("CONTRACT_ADDRESS not configured in environment.")
+    if contract_address.lower() == "0x0000000000000000000000000000000000000000":
+        raise ValueError("CONTRACT_ADDRESS cannot be the zero address.")
     if not private_key:
-        raise ValueError("BLOCKCHAIN_PRIVATE_KEY not configured in environment.")
+        raise ValueError("CONTRACT_OWNER_PRIVATE_KEY not configured in environment.")
+    if duration_days <= 0:
+        raise ValueError("duration_days must be positive.")
+    if total_size <= 0:
+        raise ValueError("total_size must be positive.")
 
     w3 = get_web3()
+    if not Web3.is_address(contract_address):
+        raise ValueError("CONTRACT_ADDRESS is not a valid EVM address.")
+    contract_address = Web3.to_checksum_address(contract_address)
+    if w3.eth.get_code(contract_address) in (b"", "0x"):
+        raise ValueError("No contract bytecode found at CONTRACT_ADDRESS.")
+    contract = w3.eth.contract(address=contract_address, abi=CONTRACT_ABI)
     account = w3.eth.account.from_key(private_key)
-    contract = w3.eth.contract(
-        address=Web3.to_checksum_address(contract_address),
-        abi=POOL_WRITE_ABI,
-    )
-    total_size_wei = int(total_size_matic * Decimal("1000000000000000000"))
-    nonce = w3.eth.get_transaction_count(account.address)
 
-    tx = contract.functions.createPool(
+    apy_bps = int((apy * Decimal("100")).to_integral_value())
+    total_size_wei = w3.to_wei(str(total_size), "ether")
+
+    create_call = contract.functions.createPool(
         name,
-        int(apy_bps),
-        int(duration_days),
+        apy_bps,
+        duration_days,
         total_size_wei,
-    ).build_transaction({
+    )
+    tx = create_call.build_transaction({
         "from": account.address,
-        "nonce": nonce,
-        "chainId": 80002,
-        "gasPrice": w3.eth.gas_price,
+        "nonce": w3.eth.get_transaction_count(account.address),
+        "chainId": w3.eth.chain_id,
     })
-    tx["gas"] = int(w3.eth.estimate_gas(tx) * 1.2)
+
+    try:
+        tx["gas"] = int(create_call.estimate_gas({"from": account.address}) * 1.2)
+    except Exception:
+        tx["gas"] = 300000
 
     signed = account.sign_transaction(tx)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
+
+    if not receipt:
+        raise ValueError(f"Transaction receipt for {tx_hash} was not found.")
+
     if receipt.status != 1:
         raise ValueError(f"Pool creation transaction failed: {tx_hash.hex()}")
 
-    pool_id = contract.functions.poolCount().call()
+    created_events = contract.events.PoolCreated().process_receipt(
+        receipt, errors=DISCARD,
+    )
+    if not created_events:
+        raise ValueError("PoolCreated event not found after pool creation.")
+
+    event = created_events[0]
     return CreatedPool(
-        pool_id=int(pool_id),
+        pool_id=int(event.args.poolId),
         tx_hash=tx_hash.hex(),
         block_number=receipt.blockNumber,
     )
@@ -139,23 +200,23 @@ def verify_investment_tx(tx_hash: str) -> VerifiedInvestment:
     """
     Independently verify an investment transaction on-chain.
 
-    1. Fetch the transaction receipt.
-    2. Verify receipt.status == 1 (success).
-    3. Verify the transaction targeted the configured contract address.
-    4. Decode the Invested event from the logs.
-    5. Return the verified investment data.
-
     Raises ValueError on any verification failure.
     Raises ConnectionError if RPC is unreachable.
     """
+    Web3, TransactionNotFound, DISCARD = _load_web3()
     contract_address = os.getenv("CONTRACT_ADDRESS")
     if not contract_address:
         raise ValueError("CONTRACT_ADDRESS not configured in environment.")
 
+    if contract_address.lower() == "0x0000000000000000000000000000000000000000":
+        raise ValueError("CONTRACT_ADDRESS cannot be the zero address.")
+    if not Web3.is_address(contract_address):
+        raise ValueError("CONTRACT_ADDRESS is not a valid EVM address.")
     contract_address = Web3.to_checksum_address(contract_address)
     w3 = get_web3()
+    if w3.eth.get_code(contract_address) in (b"", "0x"):
+        raise ValueError("No contract bytecode found at CONTRACT_ADDRESS.")
 
-    # ── 1. Fetch transaction receipt ──────────────────────────────────
     try:
         receipt = w3.eth.get_transaction_receipt(tx_hash)
     except TransactionNotFound:
@@ -164,13 +225,16 @@ def verify_investment_tx(tx_hash: str) -> VerifiedInvestment:
         logger.error("Failed to fetch tx receipt for %s: %s", tx_hash, e)
         raise ValueError(f"Failed to fetch transaction receipt: {e}")
 
-    # ── 2. Verify success ────────────────────────────────────────────
+    if not receipt:
+        raise ValueError(f"Transaction receipt for {tx_hash} was not found.")
+
     if receipt.status != 1:
         raise ValueError(
             f"Transaction {tx_hash} failed on-chain (status={receipt.status})."
         )
 
-    # ── 3. Verify contract address ───────────────────────────────────
+    if not receipt.get("to"):
+        raise ValueError(f"Transaction {tx_hash} did not target a contract address.")
     tx_to = Web3.to_checksum_address(receipt["to"])
     if tx_to != contract_address:
         raise ValueError(
@@ -178,11 +242,9 @@ def verify_investment_tx(tx_hash: str) -> VerifiedInvestment:
             f"configured contract {contract_address}."
         )
 
-    # ── 4. Decode Invested event ─────────────────────────────────────
     contract = w3.eth.contract(address=contract_address, abi=CONTRACT_ABI)
-
     invested_events = contract.events.Invested().process_receipt(
-        receipt, errors=DISCARD
+        receipt, errors=DISCARD,
     )
 
     if not invested_events:
@@ -191,7 +253,6 @@ def verify_investment_tx(tx_hash: str) -> VerifiedInvestment:
             "This transaction may not be an investment."
         )
 
-    # Use the first Invested event (one invest call = one event)
     event = invested_events[0]
     investor = Web3.to_checksum_address(event.args.investor)
     pool_id = event.args.poolId
@@ -199,7 +260,7 @@ def verify_investment_tx(tx_hash: str) -> VerifiedInvestment:
     amount_matic = Decimal(str(amount_wei)) / Decimal("1000000000000000000")
 
     logger.info(
-        "Verified investment: investor=%s pool=%d amount=%s POL tx=%s block=%d",
+        "Verified investment: investor=%s pool=%d amount=%s MATIC tx=%s block=%d",
         investor, pool_id, amount_matic, tx_hash, receipt.blockNumber,
     )
 

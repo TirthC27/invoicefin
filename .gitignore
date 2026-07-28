@@ -2,7 +2,7 @@
 #  InvoiceFi – Root .gitignore
 #  Covers: backend (Django), frontend (Vite/React), blockchain (Hardhat)
 # ============================================================
-
+**/.history/
 # ────────────────────────────────────────────────────────────
 #  Environment files – NEVER commit secrets
 # ────────────────────────────────────────────────────────────
