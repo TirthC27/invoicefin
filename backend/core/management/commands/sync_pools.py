@@ -85,6 +85,12 @@ class Command(BaseCommand):
         pool_count = contract.functions.poolCount().call()
         self.stdout.write(f"Found {pool_count} pools on-chain.\n")
 
+        stale_pools = Pool.objects.filter(contract_pool_id__gt=pool_count)
+        stale_count = stale_pools.count()
+        if stale_count:
+            stale_pools.delete()
+            self.stdout.write(self.style.WARNING(f"  Removed {stale_count} stale local pool(s) with no on-chain counterpart."))
+
         created = 0
         updated = 0
 

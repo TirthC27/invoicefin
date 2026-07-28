@@ -111,6 +111,15 @@ def get_web3():
         "https://polygon-amoy.drpc.org",
     )
     w3 = Web3(Web3.HTTPProvider(rpc_url))
+    try:
+        from web3.middleware import ExtraDataToPOAMiddleware
+        w3.middleware_onion.inject(ExtraDataToPOAMiddleware, layer=0)
+    except ImportError:
+        try:
+            from web3.middleware import geth_poa_middleware
+            w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+        except ImportError:
+            pass
     if not w3.is_connected():
         raise ConnectionError(f"Cannot connect to RPC: {rpc_url}")
     expected_chain_id = int(os.getenv("POLYGON_AMOY_CHAIN_ID", "80002"))

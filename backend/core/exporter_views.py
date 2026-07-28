@@ -160,7 +160,7 @@ def upload_invoice(request):
     if errors:
         return Response({'errors': errors}, status=400)
 
-    # ── Create invoice & linked investor pool ───────────────────────────
+    # ── Create invoice record only. Pool creation happens explicitly after verification.
     blockchain_hash = _generate_blockchain_hash(
         invoice_number, buyer_name, buyer_company, amount, issue_date, due_date
     )
@@ -179,59 +179,14 @@ def upload_invoice(request):
             country=(data.get('country') or 'United States').strip(),
             description=(data.get('description') or '').strip()[:500],
             pdf_url=data.get('pdf_url', ''),
-            status='Funding',
+            status='Verified',
             blockchain_hash=blockchain_hash,
-        )
-
-        # Auto-create corresponding Pool for Investor Dashboard availability
-        max_pool_id = Pool.objects.aggregate(models.Max('contract_pool_id'))['contract_pool_id__max'] or 0
-        pool_name = f"{buyer_company} Invoice {invoice_number}"
-        duration_days = max(1, (due_date - issue_date).days)
-        expected_roi = Decimal('13.50')
-        risk_score = 75
-
-        investment_pool = Pool.objects.create(
-            name=pool_name,
-            apy=expected_roi,
-            duration_days=duration_days,
-            total_size=amount,
-            remaining_size=amount,
-            contract_pool_id=max_pool_id + 1,
-            is_settled=False,
-            exporter=app_user,
-            invoice=invoice,
-            invoice_number=invoice_number,
-            buyer_name=buyer_name,
-            buyer_company=buyer_company,
-            currency=data.get('currency', 'USD'),
-            due_date=due_date,
-            funding_deadline=due_date,
-            min_investment=Decimal('1.00'),
-            max_investment=amount,
-            risk_score=risk_score,
-            status='open',
-        )
-
-        InvoicePool.objects.create(
-            invoice=invoice,
-            investment_pool=investment_pool,
-            pool_size=amount,
-            expected_roi=expected_roi,
-            funding_deadline=due_date,
-            min_investment=Decimal('1.00'),
-            max_investment=amount,
-            amount_funded=Decimal('0.00'),
-            is_visible_to_investors=True,
-            status='open',
         )
 
         _log_activity(invoice, 'uploaded',
                       f'Invoice {invoice_number} uploaded and verified. '
                       f'Amount: {invoice.currency} {invoice.amount}. '
                       f'Blockchain hash generated.')
-        _log_activity(invoice, 'pool_created',
-                      f'Investment Pool #{investment_pool.contract_pool_id} listed for investors. '
-                      f'Target: {invoice.currency} {invoice.amount}.')
 
     return Response({
         'invoice': InvoiceSerializer(invoice).data,
