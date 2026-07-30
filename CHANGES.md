@@ -345,3 +345,23 @@
 ### Not addressed (out of scope)
 - Did not change production hardening settings such as `DEBUG`, `ALLOWED_HOSTS`, CORS, HSTS, or secure cookies.
 - Did not add production monitoring, CI/CD, Docker, or deployment automation.
+# 2026-07-30 — Legacy Table Reconciliation and Database Lockdown
+
+## Fixed
+
+- Confirmed the nine `public.pools` rows were repeated demo-seed data, not a synchronized copy of Django's nine authoritative `core_pool` rows. No pool migration was needed.
+- Archived the dormant legacy tables as `_deprecated_*` tables in Supabase Postgres, preserving their data and foreign-key relationships for rollback/review.
+- Revoked `anon` and `authenticated` table privileges on all Django business tables and archived legacy business tables. `profiles` remains the intentional frontend identity/wallet exception.
+
+## Verified
+
+- A Supabase JS `.from('core_pool').select()` call now fails with PostgreSQL `42501 permission denied for table core_pool`.
+- Django connects as the `postgres` role and retains business-table access; `anon` and `authenticated` no longer have `core_pool` access.
+- `profiles` privileges remain available to `anon`, `authenticated`, and Django's database role.
+- `npm run lint` and `npm run build` pass.
+- `manage.py check`, `makemigrations --check --dry-run`, and the `core` test suite pass; the project currently has zero `core` tests.
+- API smoke checks pass for `/api/health/` and `/api/pools/`; protected endpoints correctly return `401` without authentication.
+
+## Notes
+
+- The broad `manage.py test` command still discovers standalone live-operation scripts (`test_create.py`, `test_upload_invoice.py`, and `test_view.py`); those are not part of the Django test suite and were excluded from the regression result.
