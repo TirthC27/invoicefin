@@ -63,12 +63,16 @@ class PoolDetailSerializer(serializers.ModelSerializer):
         return 0
 
     def get_days_remaining(self, obj):
-        """Days until pool duration ends from creation."""
+        """Days (or minutes in demo mode) until pool duration ends from creation."""
         from django.utils import timezone
+        from .constants import get_maturity_delta, DEMO_MODE
         if obj.created_at and obj.duration_days:
-            end_date = obj.created_at + timezone.timedelta(days=obj.duration_days)
-            remaining = (end_date - timezone.now()).days
-            return max(0, remaining)
+            end_date = obj.created_at + get_maturity_delta(obj.duration_days)
+            delta = end_date - timezone.now()
+            if DEMO_MODE:
+                # Return remaining minutes as a fractional day for display compatibility
+                return max(0, round(delta.total_seconds() / 60, 1))
+            return max(0, delta.days)
         return 0
 
     def get_investor_count(self, obj):

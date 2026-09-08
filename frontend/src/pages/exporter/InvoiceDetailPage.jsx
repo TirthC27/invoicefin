@@ -29,7 +29,7 @@ function CopyHash({ hash }) {
   };
   return (
     <button onClick={copy} style={{
-      background: copied ? 'rgba(34,197,94,.1)' : 'rgba(255,255,255,.05)',
+      background: copied ? 'rgba(34,197,94,.1)' : 'var(--border, #e2e0da)',
       border: `1px solid ${copied ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.1)'}`,
       borderRadius: 8, color: copied ? '#22C55E' : '#A0A0A8',
       padding: '5px 10px', cursor: 'pointer', fontSize: 12,
@@ -61,7 +61,7 @@ function CountdownBadge({ dueDate, onExpire }) {
 
 function InfoCard({ icon, label, value, valueColor, bold, mono }) {
   return (
-    <div style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 14, padding: '16px 18px' }}>
+    <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 14, padding: '16px 18px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#606068', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
         {icon} {label}
       </div>
@@ -184,6 +184,31 @@ export default function InvoiceDetailPage() {
           {isCountable && (
             <CountdownBadge dueDate={invoice.due_date} onExpire={handleExpire} />
           )}
+          {['Draft', 'Verified'].includes(invoice.status) && !hasPool && (
+            <button
+              onClick={async () => {
+                if (window.confirm('Are you sure you want to close this invoice? It will no longer be available for pooling.')) {
+                  try {
+                    const updated = await exporterApi.updateStatus(invoice.id, 'Closed');
+                    setInvoice(updated);
+                    setToast('Invoice has been closed.');
+                    setTimeout(() => setToast(''), 5000);
+                  } catch (err) {
+                    alert(err?.error || 'Failed to close invoice.');
+                  }
+                }
+              }}
+              style={{
+                height: 42, padding: '0 20px',
+                background: 'rgba(239,68,68,.1)',
+                color: '#EF4444', border: '1px solid rgba(239,68,68,.3)', borderRadius: 12, fontSize: 14,
+                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                fontFamily: 'inherit', transition: 'all .2s'
+              }}
+            >
+              Close Invoice
+            </button>
+          )}
           {invoice.status === 'Verified' && !hasPool && (
             <button
               id="create-pool-btn"
@@ -239,12 +264,12 @@ export default function InvoiceDetailPage() {
 
       {/* Funding progress */}
       {['Funding','Funded','Active','Completed'].includes(invoice.status) && (
-        <div style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
+        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span style={{ fontSize: 12.5, fontWeight: 600, color: '#A0A0A8', textTransform: 'uppercase', letterSpacing: '.5px' }}>Funding Progress</span>
             <span style={{ fontSize: 14, fontWeight: 800, color: '#7C5CFC' }}>{invoice.funding_percent ?? 0}%</span>
           </div>
-          <div style={{ height: 12, borderRadius: 99, background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.07)', padding: 2, boxSizing: 'border-box' }}>
+          <div style={{ height: 12, borderRadius: 99, background: 'var(--border, #e2e0da)', border: '1px solid var(--border, #e2e0da)', padding: 2, boxSizing: 'border-box' }}>
             <div style={{
               height: '100%', width: `${Math.min(100, invoice.funding_percent ?? 0)}%`,
               borderRadius: 99, background: 'linear-gradient(90deg,#7C5CFC,#22C55E)',
@@ -303,7 +328,7 @@ export default function InvoiceDetailPage() {
 
       {/* Description */}
       {invoice.description && (
-        <div style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
+        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
           <div style={{ fontSize: 11.5, fontWeight: 600, color: '#606068', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Description</div>
           <p style={{ margin: 0, color: '#D0D0D8', fontSize: 14, lineHeight: 1.7 }}>{invoice.description}</p>
         </div>
@@ -311,7 +336,7 @@ export default function InvoiceDetailPage() {
 
       {/* Activity history */}
       {history.length > 0 && (
-        <div style={{ background: '#1A1A1F', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '18px 20px' }}>
+        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
             <Activity size={15} color="#7C5CFC" />
             <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Activity History</h4>

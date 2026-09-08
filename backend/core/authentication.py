@@ -63,6 +63,7 @@ class SupabaseJWTAuthentication(authentication.BaseAuthentication):
                 "algorithms": [alg] if alg.startswith(("ES", "RS", "PS")) else ["HS256", "HS384", "HS512"],
                 "audience": "authenticated",
                 "options": {"verify_iss": bool(issuer)},
+                "leeway": 300,
             }
             if issuer:
                 decode_kwargs["issuer"] = issuer

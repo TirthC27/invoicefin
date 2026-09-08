@@ -110,7 +110,7 @@ export default function CaseDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400, color: '#A0A0A8' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400, color: 'var(--fg-muted)' }}>
         <Loader2 size={24} style={{ animation: 'spin 1s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
@@ -118,28 +118,28 @@ export default function CaseDetailPage() {
   }
 
   if (!caseData) {
-    return <div style={{ color: '#EF4444', textAlign: 'center', padding: 48 }}>Case not found.</div>;
+    return <div style={{ color: 'var(--color-negative)', textAlign: 'center', padding: 48 }}>Case not found.</div>;
   }
 
   return (
     <>
       <style>{`
-        .cd-back { display: inline-flex; align-items: center; gap: 8px; color: #A0A0A8; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 24px; background: none; border: none; font-family: inherit; transition: color 0.2s; padding: 0; }
-        .cd-back:hover { color: #fff; }
+        .cd-back { display: inline-flex; align-items: center; gap: 8px; color: var(--fg-muted); font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 24px; background: none; border: none; font-family: inherit; transition: color 0.2s; padding: 0; }
+        .cd-back:hover { color: var(--fg-primary); }
         .cd-header { margin-bottom: 32px; }
         .cd-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .cd-meta { font-size: 13px; color: #A0A0A8; }
+        .cd-meta { font-size: 13px; color: var(--fg-muted); }
 
         .cd-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; }
         @media (max-width: 1024px) { .cd-grid { grid-template-columns: 1fr; } }
 
-        .cd-section { background: #151518; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+        .cd-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm); }
         .cd-section-title { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
 
         /* Info Grid */
         .cd-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .cd-info-item { }
-        .cd-info-label { font-size: 11px; font-weight: 600; color: #A0A0A8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
+        .cd-info-label { font-size: 11px; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; }
         .cd-info-value { font-size: 14px; font-weight: 600; }
 
         /* Stage Timeline Visual */
@@ -151,12 +151,12 @@ export default function CaseDetailPage() {
 
         /* Timeline Events */
         .cd-timeline { position: relative; padding-left: 28px; }
-        .cd-timeline::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.06); }
+        .cd-timeline::before { content: ''; position: absolute; left: 12px; top: 0; bottom: 0; width: 2px; background: var(--border); }
         .cd-event { position: relative; margin-bottom: 20px; padding-left: 20px; }
         .cd-event-dot { position: absolute; left: -22px; top: 4px; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 1; }
         .cd-event-type { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-        .cd-event-notes { font-size: 12px; color: #A0A0A8; line-height: 1.5; }
-        .cd-event-time { font-size: 11px; color: rgba(160,160,168,0.5); margin-top: 4px; }
+        .cd-event-notes { font-size: 12px; color: var(--fg-muted); line-height: 1.5; }
+        .cd-event-time { font-size: 11px; color: var(--fg-muted); opacity: 0.6; margin-top: 4px; }
 
         /* Action Buttons */
         .cd-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -166,27 +166,27 @@ export default function CaseDetailPage() {
         .cd-action-btn svg { flex-shrink: 0; }
 
         /* Modal */
-        .cd-modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .cd-modal { background: #151518; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 28px; max-width: 440px; width: 100%; box-shadow: 0 24px 64px rgba(0,0,0,0.5); }
+        .cd-modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.3); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .cd-modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 28px; max-width: 440px; width: 100%; box-shadow: var(--shadow-lg); }
         .cd-modal-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
-        .cd-modal-subtitle { font-size: 13px; color: #A0A0A8; margin-bottom: 16px; }
-        .cd-textarea { width: 100%; min-height: 80px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 12px; outline: none; font-family: inherit; resize: vertical; }
-        .cd-textarea:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
-        .cd-input { width: 100%; height: 44px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 0 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
-        .cd-input:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
+        .cd-modal-subtitle { font-size: 13px; color: var(--fg-muted); margin-bottom: 16px; }
+        .cd-textarea { width: 100%; min-height: 80px; background: var(--bg-base); border: 1px solid var(--border); border-radius: 10px; color: var(--fg-primary); font-size: 14px; padding: 12px; outline: none; font-family: inherit; resize: vertical; }
+        .cd-textarea:focus { border-color: var(--color-accent-strong); box-shadow: 0 0 0 3px rgba(91,122,91,0.12); }
+        .cd-input { width: 100%; height: 44px; background: var(--bg-base); border: 1px solid var(--border); border-radius: 10px; color: var(--fg-primary); font-size: 14px; padding: 0 14px; outline: none; font-family: inherit; margin-bottom: 12px; }
+        .cd-input:focus { border-color: var(--color-accent-strong); box-shadow: 0 0 0 3px rgba(91,122,91,0.12); }
         .cd-modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-        .cd-modal-cancel { flex: 1; height: 42px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #A0A0A8; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
-        .cd-modal-submit { flex: 1; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, #7C5CFC, #6B48F5); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+        .cd-modal-cancel { flex: 1; height: 42px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--fg-muted); font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .cd-modal-submit { flex: 1; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--color-accent-strong,#5b7a5b), #4a6b4a); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
         .cd-modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
 
         /* Documents */
-        .cd-doc-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; margin-bottom: 8px; transition: background 0.2s; }
-        .cd-doc-item:hover { background: rgba(255,255,255,0.04); }
+        .cd-doc-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-muted); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; transition: background 0.2s; }
+        .cd-doc-item:hover { background: var(--bg-base); }
         .cd-doc-icon { width: 36px; height: 36px; border-radius: 8px; background: rgba(59,130,246,0.08); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .cd-doc-name { font-size: 13px; font-weight: 500; }
-        .cd-doc-date { font-size: 11px; color: #A0A0A8; }
-        .cd-upload-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.15); background: transparent; color: #A0A0A8; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; width: 100%; justify-content: center; margin-top: 8px; transition: all 0.2s; }
-        .cd-upload-btn:hover { border-color: rgba(124,92,252,0.3); color: #7C5CFC; background: rgba(124,92,252,0.04); }
+        .cd-doc-date { font-size: 11px; color: var(--fg-muted); }
+        .cd-upload-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 10px; border: 1px dashed var(--border); background: transparent; color: var(--fg-muted); font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; width: 100%; justify-content: center; margin-top: 8px; transition: all 0.2s; }
+        .cd-upload-btn:hover { border-color: var(--color-accent-strong); color: var(--color-accent-strong); background: rgba(91,122,91,0.04); }
       `}</style>
 
       {/* Back Button */}

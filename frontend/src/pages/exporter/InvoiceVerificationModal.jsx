@@ -66,16 +66,16 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(11,11,15,.88)', backdropFilter: 'blur(14px)',
+      backgroundColor: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(14px)',
       padding: 20,
     }}>
       <div style={{
         width: '100%', maxWidth: 460,
-        background: '#151518',
-        border: '1px solid rgba(255,255,255,.1)',
+        background: 'var(--bg-card, #fff)',
+        border: '1px solid var(--border, #e2e0da)',
         borderRadius: 24, padding: '36px 32px',
-        boxShadow: '0 30px 60px rgba(0,0,0,.55),0 0 40px rgba(124,92,252,.12)',
-        textAlign: 'center', color: '#fff', position: 'relative', overflow: 'hidden',
+        boxShadow: '0 30px 60px rgba(0,0,0,.15)',
+        textAlign: 'center', color: 'var(--fg-primary, #1a1a1f)', position: 'relative', overflow: 'hidden',
       }}>
         {/* Glow blob */}
         <div style={{
@@ -102,7 +102,7 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
         <h3 style={{ fontSize: 21, fontWeight: 700, marginBottom: 6, letterSpacing: '-.3px' }}>
           {done ? 'Verification Complete!' : 'Analyzing Invoice...'}
         </h3>
-        <p style={{ fontSize: 13, color: '#A0A0A8', marginBottom: 26, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-muted, #888)', marginBottom: 26, lineHeight: 1.5 }}>
           Server-side field validation &amp; reference hash generation in progress.
         </p>
 
@@ -115,7 +115,7 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
             </span>
             <span style={{ color: '#A0A0A8' }}>{Math.round(progress)}%</span>
           </div>
-          <div style={{ width: '100%', height: 10, borderRadius: 99, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)', padding: 2, boxSizing: 'border-box' }}>
+          <div style={{ width: '100%', height: 10, borderRadius: 99, background: 'var(--bg-muted, #eee)', border: '1px solid var(--border, #e2e0da)', padding: 2, boxSizing: 'border-box' }}>
             <div style={{
               height: '100%', width: `${progress}%`, borderRadius: 99,
               background: done ? 'linear-gradient(90deg,#22C55E,#16A34A)' : 'linear-gradient(90deg,#7C5CFC,#A78BFA)',

@@ -173,8 +173,14 @@ export default function PoolDetailPage() {
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', padding: 80, color: '#A0A0A8' }}>Loading pool...</div>;
-  if (!pool) return <div style={{ textAlign: 'center', padding: 80, color: '#EF4444' }}>Pool not found</div>;
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: 80, color: 'var(--fg-muted)' }}>
+      <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--color-accent-strong)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      Loading pool...
+    </div>
+  );
+  if (!pool) return <div style={{ textAlign: 'center', padding: 80, color: 'var(--color-negative)' }}>Pool not found</div>;
 
   const filled = pool.percent_filled || 0;
   const remaining = Number(pool.remaining_size || 0);
@@ -183,135 +189,99 @@ export default function PoolDetailPage() {
   return (
     <>
       <style>{`
-        .pd-back { display: inline-flex; align-items: center; gap: 6px; color: #A0A0A8; font-size: 13px; cursor: pointer; margin-bottom: 24px; font-weight: 500; transition: color 0.2s; background: none; border: none; font-family: inherit; }
-        .pd-back:hover { color: #fff; }
-        .pd-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
-        .pd-name { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .pd-sub { font-size: 14px; color: #A0A0A8; }
-        .pd-badge { padding: 6px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
-        .pd-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-        .pd-card { background: #151518; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 28px; }
-        .pd-card-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
-        .pd-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-        .pd-stat { }
-        .pd-stat-label { font-size: 11px; color: #A0A0A8; text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; margin-bottom: 4px; }
-        .pd-stat-val { font-size: 20px; font-weight: 800; }
-        .pd-progress { margin: 24px 0; }
-        .pd-progress-bar { height: 10px; background: rgba(255,255,255,0.06); border-radius: 5px; overflow: hidden; }
-        .pd-progress-fill { height: 100%; border-radius: 5px; transition: width 0.8s ease; }
-        .pd-progress-label { display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: #A0A0A8; }
-        .pd-invest-btn { width: 100%; padding: 14px; border-radius: 14px; background: linear-gradient(135deg, #7C5CFC, #6B48F5); color: #fff; font-size: 15px; font-weight: 700; border: none; cursor: pointer; font-family: inherit; transition: opacity 0.2s, transform 0.15s; }
-        .pd-invest-btn:hover { opacity: 0.92; transform: translateY(-1px); }
-        .pd-invest-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-        .pd-modal-overlay { position: fixed; inset: 0; background: rgba(5,5,8,0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; z-index: 9999; }
-        .pd-modal { background: #18181D; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 32px; width: 440px; max-width: 90vw; box-shadow: 0 24px 64px rgba(0,0,0,0.6); }
-        .pd-modal-title { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
-        .pd-modal-sub { font-size: 13px; color: #A0A0A8; margin-bottom: 24px; }
-        .pd-input { width: 100%; padding: 12px 16px; background: #111116; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #fff; font-size: 16px; outline: none; font-family: inherit; box-sizing: border-box; }
-        .pd-input:focus { border-color: rgba(124,92,252,0.5); }
-        .pd-calc-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; }
-        .pd-calc-label { color: #A0A0A8; }
-        .pd-calc-val { font-weight: 600; }
-        .pd-step-center { text-align: center; padding: 40px 0; }
-        .pd-spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.08); border-top: 3px solid #7C5CFC; border-radius: 50%; animation: pd-spin 0.8s linear infinite; margin: 0 auto 16px; }
         @keyframes pd-spin { to { transform: rotate(360deg); } }
-        @media (max-width: 900px) { .pd-grid { grid-template-columns: 1fr; } }
+        .pd-spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--color-accent-strong); border-radius: 50%; animation: pd-spin 0.8s linear infinite; margin: 0 auto 16px; }
+        @media (max-width: 900px) { .pd-grid { grid-template-columns: 1fr !important; } }
       `}</style>
 
-      <button className="pd-back" onClick={() => navigate('/investor/pools')}>
+      <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)', fontSize: 13, cursor: 'pointer', marginBottom: 24, fontWeight: 500, background: 'none', border: 'none', fontFamily: 'inherit', transition: 'color 0.2s' }}
+        onClick={() => navigate('/investor/pools')}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--fg-primary)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--fg-muted)'}>
         <ArrowLeft size={16} /> Back to Pools
       </button>
 
-      <div className="pd-header">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div className="pd-name">{pool.name}</div>
-          <div className="pd-sub">Pool #{pool.contract_pool_id}</div>
+          <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, marginBottom: 4 }}>{pool.name}</div>
+          <div style={{ fontSize: 14, color: 'var(--fg-muted)' }}>Pool #{pool.contract_pool_id}</div>
         </div>
-        <span className="pd-badge" style={{
+        <span style={{
+          padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
           background: pool.is_settled ? 'rgba(34,197,94,0.1)' : filled >= 100 ? 'rgba(124,92,252,0.1)' : 'rgba(59,130,246,0.1)',
-          color: pool.is_settled ? '#22C55E' : filled >= 100 ? '#7C5CFC' : '#3B82F6',
+          color: pool.is_settled ? '#16a34a' : filled >= 100 ? '#7C5CFC' : '#2563eb',
         }}>
           {pool.is_settled ? 'Settled' : filled >= 100 ? 'Fully Funded' : 'Open'}
         </span>
       </div>
 
-      <div className="pd-grid">
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }} className="pd-grid">
         {/* Left: Details */}
-        <div className="pd-card">
-          <div className="pd-card-title">Pool Details</div>
-          <div className="pd-stats">
-            <div className="pd-stat">
-              <div className="pd-stat-label">Annual Yield (APY)</div>
-              <div className="pd-stat-val" style={{ color: '#22C55E' }}>{Number(pool.apy).toFixed(2)}%</div>
-            </div>
-            <div className="pd-stat">
-              <div className="pd-stat-label">ROI (Duration)</div>
-              <div className="pd-stat-val" style={{ color: '#7C5CFC' }}>{pool.roi}%</div>
-            </div>
-            <div className="pd-stat">
-              <div className="pd-stat-label">Duration</div>
-              <div className="pd-stat-val">{pool.duration_days} days</div>
-            </div>
-            <div className="pd-stat">
-              <div className="pd-stat-label">Days Remaining</div>
-              <div className="pd-stat-val">{pool.days_remaining}d</div>
-            </div>
-            <div className="pd-stat">
-              <div className="pd-stat-label">Total Size</div>
-              <div className="pd-stat-val">{Number(pool.total_size).toFixed(4)} ETH</div>
-            </div>
-            <div className="pd-stat">
-              <div className="pd-stat-label">Investors</div>
-              <div className="pd-stat-val">{pool.investor_count || 0}</div>
-            </div>
+        <div className="data-card" style={{ padding: 28 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Pool Details</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }}>
+            {[
+              { label: 'Annual Yield (APY)', value: `${Number(pool.apy).toFixed(2)}%`, color: 'var(--color-positive)' },
+              { label: 'ROI (Duration)',     value: `${pool.roi}%`, color: '#7C5CFC' },
+              { label: 'Duration',           value: `${pool.duration_days} days` },
+              { label: 'Days Remaining',     value: `${pool.days_remaining}d` },
+              { label: 'Total Size',         value: `${Number(pool.total_size).toFixed(4)} MATIC` },
+              { label: 'Investors',          value: pool.investor_count || 0 },
+            ].map(s => (
+              <div key={s.label}>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 500, marginBottom: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: s.color || 'var(--fg-primary)' }}>{s.value}</div>
+              </div>
+            ))}
           </div>
 
-          <div className="pd-progress">
-            <div className="pd-progress-bar">
-              <div className="pd-progress-fill" style={{
+          <div style={{ margin: '24px 0' }}>
+            <div style={{ height: 10, background: 'var(--bg-muted)', borderRadius: 5, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 5, transition: 'width 0.8s ease',
                 width: `${Math.min(100, filled)}%`,
-                background: filled >= 100 ? 'linear-gradient(90deg, #7C5CFC, #22C55E)' : 'linear-gradient(90deg, #7C5CFC, #6B48F5)',
+                background: filled >= 100 ? 'linear-gradient(90deg, var(--color-accent-strong), #22c55e)' : 'var(--color-accent-strong)',
               }} />
             </div>
-            <div className="pd-progress-label">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: 'var(--fg-muted)' }}>
               <span>{filled.toFixed(1)}% funded</span>
-              <span>{remaining.toFixed(4)} ETH remaining</span>
+              <span>{remaining.toFixed(4)} MATIC remaining</span>
             </div>
           </div>
         </div>
 
         {/* Right: Invest CTA */}
-        <div className="pd-card">
-          <div className="pd-card-title">Invest in This Pool</div>
+        <div className="data-card" style={{ padding: 28 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Invest in This Pool</div>
           {!isInvestable && pool.is_settled ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
-              <CheckCircle2 size={32} style={{ marginBottom: 12, color: '#22C55E' }} />
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--fg-muted)' }}>
+              <CheckCircle2 size={32} style={{ marginBottom: 12, color: 'var(--color-positive)' }} />
               <p style={{ fontSize: 14, fontWeight: 600 }}>This pool has been settled.</p>
               <p style={{ fontSize: 13 }}>Returns have been distributed to investors.</p>
             </div>
           ) : !isInvestable ? (
-            <div style={{ textAlign: 'center', padding: '40px 0', color: '#A0A0A8' }}>
-              <Shield size={32} style={{ marginBottom: 12, color: '#7C5CFC' }} />
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--fg-muted)' }}>
+              <Shield size={32} style={{ marginBottom: 12, color: 'var(--color-accent-strong)' }} />
               <p style={{ fontSize: 14, fontWeight: 600 }}>{filled >= 100 ? 'Fully funded' : 'Not accepting investments'}</p>
               <p style={{ fontSize: 13 }}>This pool is no longer accepting investments.</p>
             </div>
           ) : (
             <>
               <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: '#A0A0A8', marginBottom: 4 }}>Available: {remaining.toFixed(4)} ETH</div>
-                <div style={{ fontSize: 12, color: '#A0A0A8' }}>Est. ROI: {pool.roi}% over {pool.duration_days} days</div>
+                <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 4 }}>Available: {remaining.toFixed(4)} MATIC</div>
+                <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Est. ROI: {pool.roi}% over {pool.duration_days} days</div>
               </div>
-              <button className="pd-invest-btn" onClick={() => setShowInvest(true)}
-                disabled={!wallet?.isConnected || !isInvestable}>
+              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: 14, fontSize: 15, fontWeight: 700, borderRadius: 14 }}
+                onClick={() => setShowInvest(true)} disabled={!wallet?.isConnected || !isInvestable}>
                 {wallet?.isConnected ? 'Invest Now' : 'Connect Wallet to Invest'}
               </button>
               {!wallet?.isConnected && (
-                <button style={{ width: '100%', marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(124,92,252,0.1)', border: '1px solid rgba(124,92,252,0.2)', color: '#7C5CFC', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+                <button style={{ width: '100%', marginTop: 10, padding: 12, borderRadius: 12, background: 'rgba(124,92,252,0.08)', border: '1px solid rgba(124,92,252,0.2)', color: 'var(--color-accent-fg)', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
                   onClick={wallet?.connectWallet}>
                   Connect Wallet
                 </button>
               )}
-              {wallet?.walletError && <div style={{ color: '#EF4444', fontSize: 12, marginTop: 10 }}>{wallet.walletError}</div>}
+              {wallet?.walletError && <div style={{ color: 'var(--color-negative)', fontSize: 12, marginTop: 10 }}>{wallet.walletError}</div>}
             </>
           )}
         </div>
@@ -319,30 +289,41 @@ export default function PoolDetailPage() {
 
       {/* Invest Modal */}
       {showInvest && (
-        <div className="pd-modal-overlay" onClick={() => { if (step === 'input' || step === 'success' || step === 'error') { setShowInvest(false); setStep('input'); setAmount(''); setCalcData(null); setError(''); } }}>
-          <div className="pd-modal" onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}
+          onClick={() => { if (step === 'input' || step === 'success' || step === 'error') { setShowInvest(false); setStep('input'); setAmount(''); setCalcData(null); setError(''); } }}>
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xl)', padding: 32, width: 440, maxWidth: '90vw', boxShadow: 'var(--shadow-lg)' }}
+            onClick={e => e.stopPropagation()}>
+
             {step === 'input' && (
               <>
-                <div className="pd-modal-title">Invest in {pool.name}</div>
-                <div className="pd-modal-sub">{remaining.toFixed(4)} ETH remaining · {pool.roi}% ROI</div>
-                <label style={{ display: 'block', fontSize: 12, color: '#A0A0A8', marginBottom: 8, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Amount (ETH)</label>
-                <input className="pd-input" type="number" step="0.001" min="0" max={remaining} value={amount}
+                <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Invest in {pool.name}</div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 24 }}>{remaining.toFixed(4)} MATIC remaining · {pool.roi}% ROI</div>
+                <label className="form-label">Amount (MATIC)</label>
+                <input className="form-input" type="number" step="0.001" min="0" max={remaining} value={amount}
                   onChange={e => setAmount(e.target.value)} placeholder="0.00" autoFocus />
 
-                {calcLoading && <div style={{ fontSize: 12, color: '#A0A0A8', marginTop: 8 }}>Calculating...</div>}
+                {calcLoading && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 8 }}>Calculating...</div>}
 
                 {calcData && (
-                  <div style={{ margin: '16px 0', padding: '12px 16px', background: 'rgba(124,92,252,0.06)', borderRadius: 12, border: '1px solid rgba(124,92,252,0.1)' }}>
-                    <div className="pd-calc-row"><span className="pd-calc-label">Platform Fee (0.5%)</span><span className="pd-calc-val" style={{ color: '#F59E0B' }}>{Number(calcData.transaction_fee).toFixed(6)} ETH</span></div>
-                    <div className="pd-calc-row"><span className="pd-calc-label">Net Investment</span><span className="pd-calc-val">{Number(calcData.net_amount).toFixed(6)} ETH</span></div>
-                    <div className="pd-calc-row"><span className="pd-calc-label">ROI ({pool.duration_days}d)</span><span className="pd-calc-val" style={{ color: '#7C5CFC' }}>{calcData.roi}%</span></div>
-                    <div className="pd-calc-row" style={{ borderBottom: 'none' }}><span className="pd-calc-label">Expected Profit</span><span className="pd-calc-val" style={{ color: '#22C55E' }}>+{Number(calcData.expected_profit).toFixed(6)} ETH</span></div>
+                  <div style={{ margin: '16px 0', padding: '12px 16px', background: 'var(--bg-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                    {[
+                      { label: 'Platform Fee (0.5%)', value: `${Number(calcData.transaction_fee).toFixed(6)} MATIC`, color: '#d97706' },
+                      { label: 'Net Investment',       value: `${Number(calcData.net_amount).toFixed(6)} MATIC` },
+                      { label: `ROI (${pool.duration_days}d)`, value: `${calcData.roi}%`, color: 'var(--color-accent-strong)' },
+                      { label: 'Expected Profit',     value: `+${Number(calcData.expected_profit).toFixed(6)} MATIC`, color: 'var(--color-positive)', last: true },
+                    ].map(r => (
+                      <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: r.last ? 'none' : '1px solid var(--border)', fontSize: 13 }}>
+                        <span style={{ color: 'var(--fg-muted)' }}>{r.label}</span>
+                        <span style={{ fontWeight: 600, color: r.color || 'var(--fg-primary)' }}>{r.value}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
 
-                {error && <div style={{ color: '#EF4444', fontSize: 13, marginTop: 8 }}>{error}</div>}
+                {error && <div style={{ color: 'var(--color-negative)', fontSize: 13, marginTop: 8 }}>{error}</div>}
 
-                <button className="pd-invest-btn" style={{ marginTop: 16 }} onClick={handleInvest}
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16, padding: 14, fontSize: 15, fontWeight: 700, borderRadius: 14 }}
+                  onClick={handleInvest}
                   disabled={!amount || Number(amount) <= 0 || Number(amount) > remaining || calcLoading || !calcData || !isInvestable}>
                   Confirm Investment
                 </button>
@@ -350,40 +331,40 @@ export default function PoolDetailPage() {
             )}
 
             {step === 'pending' && (
-              <div className="pd-step-center">
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div className="pd-spinner" />
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Connecting Wallet</div>
-                <div style={{ fontSize: 13, color: '#A0A0A8' }}>Please confirm the transaction in MetaMask...</div>
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Please confirm the transaction in MetaMask...</div>
               </div>
             )}
 
             {step === 'confirming' && (
-              <div className="pd-step-center">
-                <div className="pd-spinner" style={{ borderTopColor: '#F59E0B' }} />
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div className="pd-spinner" style={{ borderTopColor: '#d97706' }} />
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Confirming On-Chain</div>
-                <div style={{ fontSize: 13, color: '#A0A0A8' }}>Waiting for block confirmation...</div>
-                {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Waiting for block confirmation...</div>
+                {txHash && <div style={{ fontSize: 11, color: 'var(--color-accent-strong)', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
               </div>
             )}
 
             {step === 'verifying' && (
-              <div className="pd-step-center">
-                <div className="pd-spinner" style={{ borderTopColor: '#22C55E' }} />
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div className="pd-spinner" style={{ borderTopColor: 'var(--color-positive)' }} />
                 <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>Verifying Investment</div>
-                <div style={{ fontSize: 13, color: '#A0A0A8' }}>Checking the transaction against the backend ledger...</div>
-                {txHash && <div style={{ fontSize: 11, color: '#7C5CFC', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Checking the transaction against the backend ledger...</div>
+                {txHash && <div style={{ fontSize: 11, color: 'var(--color-accent-strong)', marginTop: 8, wordBreak: 'break-all' }}>{txHash}</div>}
               </div>
             )}
 
             {step === 'success' && (
-              <div className="pd-step-center">
-                <CheckCircle2 size={48} color="#22C55E" style={{ marginBottom: 16 }} />
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <CheckCircle2 size={48} color="var(--color-positive)" style={{ marginBottom: 16 }} />
                 <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Investment Successful!</div>
-                <div style={{ fontSize: 13, color: '#A0A0A8', marginBottom: 16 }}>
-                  {amount} ETH invested in {pool.name}
+                <div style={{ fontSize: 13, color: 'var(--fg-muted)', marginBottom: 16 }}>
+                  {amount} MATIC invested in {pool.name}
                 </div>
-                {calcData && <div style={{ fontSize: 14, color: '#22C55E', fontWeight: 600 }}>Expected profit: +{Number(calcData.expected_profit).toFixed(6)} ETH</div>}
-                <button className="pd-invest-btn" style={{ marginTop: 24, background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}
+                {calcData && <div style={{ fontSize: 14, color: 'var(--color-positive)', fontWeight: 600 }}>Expected profit: +{Number(calcData.expected_profit).toFixed(6)} MATIC</div>}
+                <button className="btn btn-primary" style={{ marginTop: 24, width: '100%', justifyContent: 'center', background: 'rgba(34,197,94,0.15)', color: 'var(--color-positive)', borderColor: 'rgba(34,197,94,0.3)' }}
                   onClick={() => navigate('/investor/portfolio')}>
                   View Portfolio
                 </button>
@@ -391,11 +372,12 @@ export default function PoolDetailPage() {
             )}
 
             {step === 'error' && (
-              <div className="pd-step-center">
-                <Shield size={48} color="#EF4444" style={{ marginBottom: 16 }} />
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <Shield size={48} color="var(--color-negative)" style={{ marginBottom: 16 }} />
                 <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 4 }}>Transaction Failed</div>
-                <div style={{ fontSize: 13, color: '#EF4444', marginBottom: 16 }}>{error}</div>
-                <button className="pd-invest-btn" onClick={() => { setStep('input'); setError(''); }}>
+                <div style={{ fontSize: 13, color: 'var(--color-negative)', marginBottom: 16 }}>{error}</div>
+                <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => { setStep('input'); setError(''); }}>
                   Try Again
                 </button>
               </div>

@@ -15,7 +15,7 @@ Authentication: Supabase JWT, EXPORTER role required.
 import hashlib
 import re
 from decimal import Decimal, InvalidOperation
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -53,10 +53,12 @@ def _require_exporter(request):
         }
         app_user = sync_app_user_from_identity(identity)
 
-    if app_user.role not in ('EXPORTER', 'ADMIN'):
+    # Allow: native EXPORTER role, ADMIN, OR investors upgraded via KYC (can_export=True)
+    if app_user.role not in ('EXPORTER', 'ADMIN') and not app_user.can_export:
         return None, Response({
-            'error': 'EXPORTER role required.',
+            'error': 'Exporter access required. Complete KYC to unlock this feature.',
             'your_role': app_user.role,
+            'can_export': app_user.can_export,
         }, status=403)
     return app_user, None
 
@@ -85,7 +87,7 @@ def _log_activity(invoice, action_type, description, pool=None):
 
 
 INVOICE_NUM_RE = re.compile(r'^[a-zA-Z0-9_-]+$')
-VALID_STATUSES = {'Draft', 'Verified', 'Funding', 'Funded', 'Active', 'Completed'}
+VALID_STATUSES = {'Draft', 'Verified', 'Funding', 'Funded', 'Active', 'Completed', 'Closed'}
 ALLOWED_STATUS_TRANSITIONS = {
     'Draft': 'Verified',
     'Verified': 'Funding',
@@ -326,16 +328,21 @@ def create_invoice_pool(request, pk):
         errors['expected_roi'] = 'Enter a valid percentage.'
         expected_roi = None
 
-    # Funding deadline
-    try:
-        funding_deadline = date.fromisoformat(data.get('funding_deadline', ''))
-        if funding_deadline >= invoice.due_date:
-            errors['funding_deadline'] = 'Funding deadline must be before invoice due date.'
-        if funding_deadline <= date.today():
-            errors['funding_deadline'] = 'Funding deadline must be in the future.'
-    except (ValueError, TypeError):
-        errors['funding_deadline'] = 'Invalid date format.'
-        funding_deadline = None
+    # Funding deadline — in DEMO_MODE always auto-set to now+2h
+    from .constants import DEMO_MODE, get_maturity_delta
+    now = timezone.now()
+    if DEMO_MODE:
+        funding_deadline = now + timedelta(hours=2)
+    else:
+        try:
+            funding_deadline = datetime.fromisoformat(data.get('funding_deadline', ''))
+            if not timezone.is_aware(funding_deadline):
+                funding_deadline = timezone.make_aware(funding_deadline)
+            if funding_deadline <= now:
+                errors['funding_deadline'] = 'Funding deadline must be in the future.'
+        except (ValueError, TypeError):
+            errors['funding_deadline'] = 'Invalid date format.'
+            funding_deadline = None
 
     # Min / Max investment
     try:
@@ -363,7 +370,12 @@ def create_invoice_pool(request, pk):
         return Response({'errors': errors}, status=400)
 
     pool_name = f"{invoice.buyer_company} Invoice {invoice.invoice_number}"
-    duration_days = max(1, (invoice.due_date - date.today()).days)
+    # Demo mode: maturity happens in DEMO_MATURITY_MINUTES; for the blockchain call we
+    # still must pass a duration_days >= 1, so we use 1.
+    if DEMO_MODE:
+        duration_days = 1
+    else:
+        duration_days = max(1, (invoice.due_date.date() - date.today()).days) if hasattr(invoice.due_date, 'date') else max(1, (invoice.due_date - date.today()).days)
 
     try:
         created = create_pool_on_chain(
@@ -452,7 +464,10 @@ def update_invoice_status(request, pk):
         return Response({'error': f'Invalid status. Valid: {sorted(VALID_STATUSES)}'}, status=400)
 
     old_status = invoice.status
-    if new_status != old_status and ALLOWED_STATUS_TRANSITIONS.get(old_status) != new_status:
+    # Special bypass: Allow closing an un-pooled invoice
+    if new_status == 'Closed' and old_status in ('Draft', 'Verified'):
+        pass
+    elif new_status != old_status and ALLOWED_STATUS_TRANSITIONS.get(old_status) != new_status:
         return Response(
             {
                 'error': f'Invalid status transition from {old_status} to {new_status}.',

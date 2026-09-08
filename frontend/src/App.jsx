@@ -24,7 +24,7 @@ function RoleRedirect() {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#0B0B0F', color: '#A0A0A8',
+        minHeight: '100vh', background: 'var(--bg-base, #f5f4f0)', color: 'var(--fg-muted, #888)',
       }}>
         <p>Redirecting...</p>
       </div>

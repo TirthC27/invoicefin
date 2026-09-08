@@ -119,7 +119,7 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           border-radius: 999px;
           background: #EF4444;
           color: #fff;
-          border: 2px solid #0B0B0F;
+          border: 2px solid var(--bg-base);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -134,10 +134,10 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           width: min(360px, calc(100vw - 32px));
           max-height: 430px;
           overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px;
-          background: #111116;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-lg);
           z-index: 200;
         }
         .notif-header {
@@ -146,16 +146,16 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           justify-content: space-between;
           gap: 12px;
           padding: 14px 14px 12px;
-          border-bottom: 1px solid rgba(255,255,255,0.08);
+          border-bottom: 1px solid var(--border);
         }
-        .notif-title { color: #fff; font-size: 14px; font-weight: 700; }
+        .notif-title { color: var(--fg-primary); font-size: 14px; font-weight: 700; }
         .notif-mark {
           width: 30px;
           height: 30px;
           border-radius: 8px;
-          border: 1px solid rgba(255,255,255,0.08);
+          border: 1px solid var(--border);
           background: transparent;
-          color: #A0A0A8;
+          color: var(--fg-muted);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -175,14 +175,14 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           gap: 10px;
           padding: 13px 14px;
           border: 0;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
+          border-bottom: 1px solid var(--border);
           background: transparent;
-          color: #fff;
+          color: var(--fg-primary);
           text-align: left;
           font-family: inherit;
           cursor: pointer;
         }
-        .notif-item:hover { background: rgba(255,255,255,0.04); }
+        .notif-item:hover { background: var(--bg-muted); }
         .notif-dot {
           width: 8px;
           height: 8px;
@@ -194,15 +194,15 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
         .notif-dot.unread { opacity: 1; }
         .notif-message {
           min-width: 0;
-          color: #E8E8EA;
+          color: var(--fg-primary);
           font-size: 13px;
           font-weight: 500;
           line-height: 1.45;
           overflow-wrap: anywhere;
         }
-        .notif-item.read .notif-message { color: #A0A0A8; font-weight: 400; }
+        .notif-item.read .notif-message { color: var(--fg-muted); font-weight: 400; }
         .notif-time {
-          color: #6F6F78;
+          color: var(--fg-muted);
           font-size: 11px;
           font-weight: 600;
           white-space: nowrap;
@@ -210,7 +210,7 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
         }
         .notif-state {
           padding: 28px 18px;
-          color: #A0A0A8;
+          color: var(--fg-muted);
           font-size: 13px;
           text-align: center;
         }

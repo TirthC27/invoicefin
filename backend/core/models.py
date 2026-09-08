@@ -22,8 +22,8 @@ class Pool(models.Model):
     buyer_name = models.CharField(max_length=200, blank=True, default='')
     buyer_company = models.CharField(max_length=300, blank=True, default='')
     currency = models.CharField(max_length=5, blank=True, default='MATIC')
-    due_date = models.DateField(null=True, blank=True)
-    funding_deadline = models.DateField(null=True, blank=True)
+    due_date = models.DateTimeField(null=True, blank=True)
+    funding_deadline = models.DateTimeField(null=True, blank=True)
     min_investment = models.DecimalField(max_digits=20, decimal_places=8, default=0)
     max_investment = models.DecimalField(max_digits=20, decimal_places=8, default=0)
     risk_score = models.IntegerField(null=True, blank=True)
@@ -212,6 +212,7 @@ class AppUser(models.Model):
     full_name = models.CharField(max_length=200, blank=True, default='')
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='INVESTOR')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ACTIVE')
+    can_export = models.BooleanField(default=False, help_text="When True, user has exporter capabilities (via KYC upgrade)")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -270,11 +271,13 @@ class RecoveryCase(models.Model):
     law_firm = models.ForeignKey(LawFirm, null=True, blank=True, on_delete=models.SET_NULL,
                                  related_name='recovery_cases')
     exporter = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='recovery_cases_as_exporter')
-    investor = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='recovery_cases_as_investor')
+    investor = models.ForeignKey(AppUser, null=True, blank=True, on_delete=models.SET_NULL, related_name='recovery_cases_as_investor')
     outstanding_amount = models.DecimalField(max_digits=20, decimal_places=8)
     recovery_stage = models.CharField(max_length=30, choices=STAGE_CHOICES, default='DEFAULT')
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='MEDIUM')
     assigned_date = models.DateTimeField(null=True, blank=True)
+    bid_deadline = models.DateTimeField(null=True, blank=True,
+                                        help_text='Auction deadline — highest bidder wins when this passes')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -329,6 +332,34 @@ class Notification(models.Model):
         ordering = ['-created_at']
 
 
+# ── KYC Application ──────────────────────────────────────
+class KYCApplication(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING',  'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    user = models.OneToOneField(
+        AppUser, on_delete=models.CASCADE, related_name='kyc_application',
+        help_text='One KYC application per user'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewer_notes = models.TextField(blank=True, default='')
+    auto_approve_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Demo mode: auto-approve at this UTC datetime'
+    )
+
+    def __str__(self):
+        return f'KYC({self.user.email}) — {self.status}'
+
+    class Meta:
+        ordering = ['-submitted_at']
+
+
 # ══════════════════════════════════════════════════════════
 # EXPORTER INVOICE LIFECYCLE
 # ══════════════════════════════════════════════════════════
@@ -342,6 +373,7 @@ class Invoice(models.Model):
         ('Funded',    'Funded'),
         ('Active',    'Active'),
         ('Completed', 'Completed'),
+        ('Closed',    'Closed'),
     ]
     CURRENCY_CHOICES = [
         ('USD', 'US Dollar'), ('EUR', 'Euro'), ('GBP', 'British Pound'),
@@ -408,7 +440,7 @@ class InvoicePool(models.Model):
     pool_size        = models.DecimalField(max_digits=20, decimal_places=2)
     expected_roi     = models.DecimalField(max_digits=6, decimal_places=2,
                                            help_text="Expected ROI percentage, e.g. 12.50")
-    funding_deadline = models.DateField(help_text="Must be before invoice due date")
+    funding_deadline = models.DateTimeField(help_text="Deadline for pool to be fully funded (minute-granularity for demo)")
     min_investment   = models.DecimalField(max_digits=20, decimal_places=2)
     max_investment   = models.DecimalField(max_digits=20, decimal_places=2)
     amount_funded    = models.DecimalField(max_digits=20, decimal_places=2, default=0)
@@ -429,6 +461,31 @@ class InvoicePool(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+# ── Recovery Bid (law firm open auction) ─────────────────
+class RecoveryBid(models.Model):
+    STATUS_CHOICES = [
+        ('PENDING',  'Pending'),
+        ('ACCEPTED', 'Accepted'),
+        ('REJECTED', 'Rejected'),
+    ]
+
+    case = models.ForeignKey(RecoveryCase, on_delete=models.CASCADE, related_name='bids')
+    law_firm = models.ForeignKey(LawFirm, on_delete=models.CASCADE, related_name='bids')
+    bid_amount = models.DecimalField(
+        max_digits=20, decimal_places=8,
+        help_text='Amount in MATIC the law firm is willing to pay the pool'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    notes = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'Bid #{self.id} by {self.law_firm.firm_name} — {self.bid_amount} MATIC ({self.status})'
+
+    class Meta:
+        ordering = ['-bid_amount', 'created_at']
 
 
 # ── Upload History (activity log) ────────────────────────

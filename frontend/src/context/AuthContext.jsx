@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient';
 import { AuthContext } from './authContextValue';
 import { useAuth } from './useAuth';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /**
  * Helper to construct a consistent user object from session metadata
@@ -22,6 +22,7 @@ function buildUserFromSession(session, backendData = null) {
     status: backendData?.status || 'ACTIVE',
     full_name: backendData?.full_name || metadata.full_name || session.user.email?.split('@')[0],
     wallet_address: backendData?.wallet_address || null,
+    can_export: backendData?.can_export || false,
   };
 }
 
@@ -37,6 +38,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [backendAuthError, setBackendAuthError] = useState(null);
+  // Keep a ref so visibilitychange handler always has the latest session
+  const sessionRef = React.useRef(null);
 
   /**
    * Fetch user profile from backend Django API.
@@ -93,6 +96,17 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  /**
+   * refreshUser — re-fetch /user/me/ and update the in-memory user object.
+   * Call this after any server-side role/capability change (e.g. KYC approval)
+   * to avoid requiring a full page reload or re-login.
+   */
+  const refreshUser = useCallback(async () => {
+    const currentSession = sessionRef.current;
+    if (!currentSession) return null;
+    return fetchUserProfile(currentSession);
+  }, [fetchUserProfile]);
+
   // Initialize auth state
   useEffect(() => {
     let mounted = true;
@@ -101,6 +115,7 @@ export function AuthProvider({ children }) {
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (mounted && currentSession) {
+          sessionRef.current = currentSession;
           setSession(currentSession);
           await fetchUserProfile(currentSession);
         } else if (mounted) {
@@ -119,6 +134,7 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!mounted) return;
+        sessionRef.current = newSession;
         setSession(newSession);
 
         if (newSession) {
@@ -131,9 +147,20 @@ export function AuthProvider({ children }) {
       }
     );
 
+    // Refetch user profile when the tab regains focus.
+    // This ensures that role/capability changes made in another tab or by
+    // a background job (e.g. KYC auto-approval) propagate without a reload.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && sessionRef.current) {
+        fetchUserProfile(sessionRef.current).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       mounted = false;
       subscription?.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchUserProfile]);
 
@@ -163,6 +190,7 @@ export function AuthProvider({ children }) {
     user,
     loading,
     signOut,
+    refreshUser,
     getDashboardPath,
     backendAuthError,
     backendReady: !!session && !!user && !backendAuthError,
@@ -189,13 +217,13 @@ export function ProtectedRoute({ children, allowedRoles }) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#0B0B0F', color: '#A0A0A8',
+        minHeight: '100vh', background: 'var(--bg-base, #f5f4f0)', color: 'var(--fg-muted, #888)',
         fontFamily: 'Inter, sans-serif',
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 40, height: 40, border: '3px solid rgba(124,92,252,0.2)',
-            borderTopColor: '#7C5CFC', borderRadius: '50%',
+            width: 40, height: 40, border: '3px solid var(--border, #e2e0da)',
+            borderTopColor: 'var(--color-accent-strong, #5b7a5b)', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
           }} />
           <p>Loading...</p>
@@ -209,20 +237,28 @@ export function ProtectedRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace state={backendAuthError ? { authError: backendAuthError } : undefined} />;
   }
 
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: '#0B0B0F', color: '#EF4444',
-        fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: 12,
-      }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700 }}>Access Denied</h1>
-        <p style={{ color: '#A0A0A8' }}>You don't have permission to access this page.</p>
-        <a href="/login" style={{ color: '#7C5CFC', textDecoration: 'underline' }}>
-          Return to Login
-        </a>
-      </div>
-    );
+  if (allowedRoles && user) {
+    let hasAccess = allowedRoles.includes(user.role);
+    
+    if (allowedRoles.includes('EXPORTER') && user.can_export) {
+      hasAccess = true;
+    }
+
+    if (!hasAccess) {
+      return (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          minHeight: '100vh', background: 'var(--bg-base, #f5f4f0)', color: 'var(--color-negative, #dc2626)',
+          fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: 12,
+        }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Access Denied</h1>
+          <p style={{ color: 'var(--fg-muted, #888)' }}>You don't have permission to access this page.</p>
+          <a href="/login" style={{ color: 'var(--color-accent-strong, #5b7a5b)', textDecoration: 'underline' }}>
+            Return to Login
+          </a>
+        </div>
+      );
+    }
   }
 
   return children;

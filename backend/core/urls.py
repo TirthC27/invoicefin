@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 from . import admin_views
+from . import auth_views
+from . import kyc_views
 from . import lawfirm_views
 from . import notification_views
 from . import exporter_views
@@ -10,8 +12,13 @@ urlpatterns = [
     path('health/', views.health_check, name='health_check'),
 
     # User
+    path('auth/register/', auth_views.register_user, name='register_user'),
     path('user/me/', views.get_user_me, name='get_user_me'),
     path('auth/sync-user/', views.sync_user_role, name='sync_user_role'),
+
+    # KYC
+    path('kyc/submit/', kyc_views.submit_kyc, name='kyc_submit'),
+    path('kyc/status/', kyc_views.get_kyc_status, name='kyc_status'),
 
     # Pools
     path('pools/', views.list_pools, name='list_pools'),
@@ -70,4 +77,11 @@ urlpatterns = [
     path('exporter/invoices/<int:pk>/status/',        exporter_views.update_invoice_status, name='exporter_update_status'),
     path('exporter/invoices/<int:pk>/mature/',        exporter_views.mature_invoice,        name='exporter_mature_invoice'),
     path('exporter/activities/',                      exporter_views.exporter_activities,   name='exporter_activities'),
+
+    # ══════════════════════════════════════════════════════
+    # RECOVERY BID MARKETPLACE
+    # ══════════════════════════════════════════════════════
+    path('recovery/open-cases/',                      views.list_open_recovery_cases,       name='recovery_open_cases'),
+    path('recovery/cases/<int:case_id>/bid/',         views.place_recovery_bid,             name='recovery_place_bid'),
+    path('recovery/settle-bids/',                     views.auto_settle_bids,               name='recovery_settle_bids'),
 ]

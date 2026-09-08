@@ -34,12 +34,19 @@ class ScheduledCommand:
     initial_delay_seconds: int
 
 
-SCHEDULE = [
-    ScheduledCommand("mature_invoices", 60, 10),
-    ScheduledCommand("sync_pools", 300, 20),
-    ScheduledCommand("process_returns", 900, 30),
-    ScheduledCommand("check_overdue", 3600, 45),
-]
+def _build_schedule():
+    """Build the scheduler list, reading demo-mode settings at startup."""
+    from core.constants import get_check_overdue_interval
+    overdue_interval = get_check_overdue_interval()
+    return [
+        ScheduledCommand("mature_invoices",  60,             10),
+        ScheduledCommand("sync_pools",       300,            20),
+        ScheduledCommand("process_returns",  900,            30),
+        ScheduledCommand("check_overdue",    overdue_interval, 45),
+        ScheduledCommand("process_kyc",      30,             15),
+        ScheduledCommand("settle_bids",      60,             50),
+    ]
+
 
 _started = False
 _started_lock = threading.Lock()
@@ -86,7 +93,9 @@ def start_scheduler_once() -> None:
             return
         _started = True
 
-    for command in SCHEDULE:
+    schedule = _build_schedule()
+
+    for command in schedule:
         thread = threading.Thread(
             target=_command_loop,
             args=(command,),
@@ -97,5 +106,5 @@ def start_scheduler_once() -> None:
 
     logger.info(
         "InvoiceFin background scheduler started: %s",
-        ", ".join(f"{item.name}/{item.interval_seconds}s" for item in SCHEDULE),
-    )
+        ", ".join(f"{item.name}/{item.interval_seconds}s" for item in schedule),
+    )

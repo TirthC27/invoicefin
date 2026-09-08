@@ -25,9 +25,9 @@ const CURRENCIES = [
 ];
 
 const inputBase = {
-  background: 'rgba(255,255,255,.05)',
-  border: '1px solid rgba(255,255,255,.1)',
-  borderRadius: 10, color: '#fff', fontSize: 14,
+  background: 'var(--bg-card, #fff)',
+  border: '1px solid var(--border, #e2e0da)',
+  borderRadius: 10, color: 'var(--fg-primary, #1a1a1f)', fontSize: 14,
   padding: '10px 14px', outline: 'none',
   width: '100%', boxSizing: 'border-box',
   fontFamily: "'Inter',sans-serif",
@@ -37,12 +37,12 @@ const inputBase = {
 function FormField({ label, error, required, hint, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={{ fontSize: 12.5, fontWeight: 600, color: error ? '#F87171' : '#A0A0A8', letterSpacing: '.2px' }}>
-        {label}{required && <span style={{ color: '#7C5CFC', marginLeft: 2 }}>*</span>}
+      <label style={{ fontSize: 12.5, fontWeight: 600, color: error ? 'var(--color-negative)' : 'var(--fg-muted)', letterSpacing: '.2px' }}>
+        {label}{required && <span style={{ color: 'var(--color-accent-strong)', marginLeft: 2 }}>*</span>}
       </label>
       {children}
-      {hint && !error && <span style={{ fontSize: 11, color: '#505058' }}>{hint}</span>}
-      {error && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#F87171' }}><AlertCircle size={11} /> {error}</div>}
+      {hint && !error && <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{hint}</span>}
+      {error && <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--color-negative)' }}><AlertCircle size={11} /> {error}</div>}
     </div>
   );
 }
@@ -127,11 +127,31 @@ export default function UploadInvoice() {
 
   const is = (k) => ({
     ...inputBase,
-    borderColor: errors[k] ? 'rgba(248,113,113,.5)' : 'rgba(255,255,255,.1)',
+    borderColor: errors[k] ? 'rgba(220,38,38,.5)' : 'var(--border, #e2e0da)',
   });
 
-  const focusBorder = (e) => e.target.style.boxShadow = '0 0 0 2px rgba(124,92,252,.25)';
+  const focusBorder = (e) => e.target.style.boxShadow = '0 0 0 2px rgba(91,122,91,.25)';
   const blurBorder  = (e) => e.target.style.boxShadow = 'none';
+
+  const fillDemoData = () => {
+    const nextMonth = new Date();
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    setForm({
+      invoice_number: `INV-DEMO-${Math.floor(1000 + Math.random() * 9000)}`,
+      buyer_name: 'Jane Doe',
+      buyer_company: 'TechCorp International',
+      amount: '75000',
+      currency: 'USD',
+      issue_date: today,
+      due_date: nextMonth.toISOString().slice(0, 10),
+      po_number: 'PO-98765',
+      country: 'United States',
+      description: 'Export of 500 units of custom silicon wafers for Q4 manufacturing run.',
+    });
+    setErrors({});
+    setApiError('');
+  };
 
   return (
     <>
@@ -141,12 +161,18 @@ export default function UploadInvoice() {
         blockchainHash={blockchainHash}
       />
 
-      <div style={{ color: '#fff', fontFamily: "'Inter',sans-serif", maxWidth: 720 }}>
-        <div style={{ marginBottom: 28 }}>
-          <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800, letterSpacing: '-.5px' }}>Upload Invoice</h2>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#A0A0A8' }}>
-            Submit an invoice for AI verification and blockchain hash generation.
-          </p>
+        <div className="page-header">
+          <div className="page-header-left">
+            <h1>Upload Invoice</h1>
+            <p>Submit an invoice for AI verification and blockchain hash generation.</p>
+          </div>
+          <button
+            type="button"
+            onClick={fillDemoData}
+            className="btn btn-outline"
+          >
+            Fill Demo Data
+          </button>
         </div>
 
         {apiError && (
@@ -159,9 +185,9 @@ export default function UploadInvoice() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
             {/* Section 1: Invoice Info */}
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '22px 20px' }}>
+            <div className="data-card" style={{ padding: '22px 20px', marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                <FileText size={16} color="#7C5CFC" />
+                <FileText size={16} color="var(--color-accent-strong, #5b7a5b)" />
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Invoice Information</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -193,9 +219,9 @@ export default function UploadInvoice() {
             </div>
 
             {/* Section 2: Buyer Info */}
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '22px 20px' }}>
+            <div className="data-card" style={{ padding: '22px 20px', marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                <Upload size={16} color="#F59E0B" />
+                <Upload size={16} color="#d97706" />
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Buyer Details</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -221,17 +247,13 @@ export default function UploadInvoice() {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={submitting} style={{
-              height: 50, padding: '0 28px',
-              background: submitting ? 'rgba(124,92,252,.4)' : 'linear-gradient(135deg,#7C5CFC,#6B48F5)',
-              color: '#fff', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 700,
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'inherit',
-              boxShadow: submitting ? 'none' : '0 4px 18px rgba(124,92,252,.4)',
-              transition: 'all .2s', width: '100%', justifyContent: 'center',
-            }}>
+            <button type="submit" disabled={submitting} className="btn btn-primary"
+              style={{
+                height: 50, width: '100%', justifyContent: 'center', fontSize: 15, fontWeight: 700, borderRadius: 14,
+                opacity: submitting ? 0.6 : 1, cursor: submitting ? 'not-allowed' : 'pointer',
+              }}>
               {submitting
-                ? <><Loader2 size={18} style={{ animation: 'uSpin 1s linear infinite' }} /> Uploading & Verifying…</>
+                ? <><Loader2 size={18} style={{ animation: 'uSpin 1s linear infinite' }} /> Uploading &amp; Verifying…</>
                 : <><Upload size={18} /> Upload Invoice</>
               }
             </button>
@@ -239,10 +261,9 @@ export default function UploadInvoice() {
         </form>
         <style>{`
           @keyframes uSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-          input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.6)}
-          select option{background:#1A1A1F;color:#fff}
+          input[type=date]::-webkit-calendar-picker-indicator{filter:none}
+          select option{background:var(--bg-card,#fff);color:var(--fg-primary,#1a1a1f)}
         `}</style>
-      </div>
     </>
   );
 }

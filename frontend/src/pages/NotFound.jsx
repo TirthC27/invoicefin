@@ -5,8 +5,8 @@ export default function NotFound() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: '#0B0B0F',
-      color: '#fff',
+      background: 'var(--bg-base, #f5f4f0)',
+      color: 'var(--fg-primary, #1a1a1f)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -14,27 +14,14 @@ export default function NotFound() {
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
       <main style={{ maxWidth: 420, textAlign: 'center' }}>
-        <div style={{ color: '#A0A0A8', fontSize: 13, fontWeight: 700, marginBottom: 12 }}>404</div>
-        <h1 style={{ fontSize: 32, lineHeight: 1.1, margin: '0 0 12px' }}>Page not found</h1>
-        <p style={{ color: '#A0A0A8', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
+        <div style={{ fontSize: 72, fontWeight: 900, letterSpacing: -4, marginBottom: 12, color: 'var(--color-accent-strong, #5b7a5b)', opacity: 0.4 }}>
+          404
+        </div>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Page not found</h1>
+        <p style={{ color: 'var(--fg-muted, #888)', fontSize: 14, lineHeight: 1.6, margin: '0 0 28px' }}>
           The page you opened does not exist in this InvoiceFi workspace.
         </p>
-        <Link
-          to="/dashboard"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            height: 40,
-            padding: '0 16px',
-            borderRadius: 8,
-            background: '#7C5CFC',
-            color: '#fff',
-            textDecoration: 'none',
-            fontSize: 14,
-            fontWeight: 700,
-          }}
-        >
+        <Link to="/dashboard" className="btn btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
           Go to dashboard
         </Link>
       </main>

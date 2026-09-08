@@ -20,7 +20,7 @@ from .serializers import (
     PoolSerializer, PoolDetailSerializer, InvestmentSerializer,
     TransactionSerializer, PortfolioSerializer,
 )
-from .constants import TRANSACTION_FEE_RATE
+from .constants import TRANSACTION_FEE_RATE, get_maturity_delta
 
 
 
@@ -79,6 +79,7 @@ def get_user_me(request):
         "status": app_user.status if app_user else getattr(request.user, 'status', 'ACTIVE'),
         "full_name": app_user.full_name if app_user else identity['full_name'],
         "wallet_address": profile.get('wallet_address'),
+        "can_export": app_user.can_export if app_user else False,
     })
 
 
@@ -244,8 +245,8 @@ def create_pool_from_invoice(request, pk):
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def list_pools(request):
-    """GET /api/pools/ — List all investment pools with enriched data."""
-    pools = Pool.objects.all()
+    """GET /api/pools/ — List all investment pools with enriched data. Only shows pools from actual platform invoices."""
+    pools = Pool.objects.filter(invoice__isnull=False)
     serializer = PoolDetailSerializer(pools, many=True)
     return Response(serializer.data)
 
@@ -349,7 +350,7 @@ def verify_investment(request):
         net_amount = verified.amount_matic - fee
         roi_pct = (pool.apy * Decimal(str(pool.duration_days)) / Decimal('365'))
         expected_profit = net_amount * roi_pct / Decimal('100')
-        returns_due = timezone.now() + timedelta(days=pool.duration_days)
+        returns_due = timezone.now() + get_maturity_delta(pool.duration_days)
 
         investment = Investment.objects.create(
             user_id=request.user.id,
@@ -589,18 +590,8 @@ def get_portfolio(request):
         recovery_info = None
         if inv.status in ['overdue', 'defaulted']:
             recovery_case = RecoveryCase.objects.filter(
-                investment=inv
+                pool=inv.pool
             ).select_related('law_firm').first()
-            if not recovery_case:
-                # Fallback: find by pool + investor
-                from .models import AppUser
-                try:
-                    app_user = AppUser.objects.get(supabase_uid=request.user.id)
-                    recovery_case = RecoveryCase.objects.filter(
-                        pool=inv.pool, investor=app_user
-                    ).select_related('law_firm').first()
-                except AppUser.DoesNotExist:
-                    pass
 
             if recovery_case:
                 recovery_info = {
@@ -696,8 +687,8 @@ def investor_recovery_cases(request):
         return Response([])
 
     cases = RecoveryCase.objects.filter(
-        investor=app_user
-    ).select_related('law_firm', 'pool', 'investment').order_by('-created_at')
+        pool__investments__user_id=request.user.id
+    ).select_related('law_firm', 'pool').distinct().order_by('-created_at')
 
     result = []
     for case in cases:
@@ -743,3 +734,169 @@ def list_transactions(request):
     transactions = Transaction.objects.filter(user_id=request.user.id)
     serializer = TransactionSerializer(transactions, many=True)
     return Response(serializer.data)
+
+
+# ═══════════════════════════════════════════════════════════
+# RECOVERY BID MARKETPLACE
+# ═══════════════════════════════════════════════════════════
+
+@api_view(['GET'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def list_open_recovery_cases(request):
+    """GET /api/recovery/open-cases/ — Defaulted cases open for bidding (law firm view)."""
+    from .models import RecoveryBid, LawFirm, AppUser
+    now = timezone.now()
+    cases = RecoveryCase.objects.filter(
+        recovery_stage='DEFAULT',
+        law_firm__isnull=True,
+    ).select_related('pool', 'investment', 'exporter').order_by('-created_at')
+
+    result = []
+    for case in cases:
+        bids = RecoveryBid.objects.filter(case=case).select_related('law_firm').order_by('-bid_amount')
+        result.append({
+            'id': case.id,
+            'pool_name': case.pool.name if case.pool else None,
+            'contract_pool_id': case.pool.contract_pool_id if case.pool else None,
+            'outstanding_amount': str(case.outstanding_amount),
+            'priority': case.priority,
+            'created_at': case.created_at,
+            'bid_deadline': case.bid_deadline,
+            'bid_deadline_passed': case.bid_deadline and now > case.bid_deadline,
+            'bids': [
+                {
+                    'id': b.id,
+                    'law_firm_name': b.law_firm.firm_name,
+                    'law_firm_country': b.law_firm.country,
+                    'bid_amount': str(b.bid_amount),
+                    'status': b.status,
+                    'created_at': b.created_at,
+                }
+                for b in bids
+            ],
+            'highest_bid': str(bids.first().bid_amount) if bids.exists() else None,
+        })
+
+    return Response(result)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def place_recovery_bid(request, case_id):
+    """POST /api/recovery/cases/<id>/bid/ — Law firm places a bid on a defaulted case."""
+    from .models import RecoveryBid, LawFirm, AppUser
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        app_user = AppUser.objects.get(supabase_uid=request.user.id)
+    except AppUser.DoesNotExist:
+        return Response({'error': 'User not found.'}, status=404)
+
+    if app_user.role != 'LAW_FIRM':
+        return Response({'error': 'Only law firms can place bids.'}, status=403)
+
+    try:
+        law_firm = LawFirm.objects.get(user=app_user)
+    except LawFirm.DoesNotExist:
+        return Response({'error': 'Law firm profile not found.'}, status=404)
+
+    try:
+        case = RecoveryCase.objects.get(id=case_id, recovery_stage='DEFAULT', law_firm__isnull=True)
+    except RecoveryCase.DoesNotExist:
+        return Response({'error': 'Case not found or already assigned.'}, status=404)
+
+    now = timezone.now()
+    if case.bid_deadline and now > case.bid_deadline:
+        return Response({'error': 'Bidding deadline has passed.'}, status=400)
+
+    try:
+        bid_amount = Decimal(str(request.data.get('bid_amount', 0)))
+        if bid_amount <= 0:
+            return Response({'error': 'Bid amount must be positive.'}, status=400)
+        if bid_amount > case.outstanding_amount:
+            return Response({'error': f'Bid cannot exceed the outstanding amount ({case.outstanding_amount} MATIC).'}, status=400)
+    except (InvalidOperation, TypeError):
+        return Response({'error': 'Enter a valid bid amount.'}, status=400)
+
+    # Check if this law firm already bid; if so, update
+    existing = RecoveryBid.objects.filter(case=case, law_firm=law_firm, status='PENDING').first()
+    if existing:
+        existing.bid_amount = bid_amount
+        existing.notes = request.data.get('notes', existing.notes)
+        existing.save()
+        bid = existing
+    else:
+        bid = RecoveryBid.objects.create(
+            case=case,
+            law_firm=law_firm,
+            bid_amount=bid_amount,
+            notes=request.data.get('notes', ''),
+        )
+
+    return Response({
+        'id': bid.id,
+        'bid_amount': str(bid.bid_amount),
+        'status': bid.status,
+        'created_at': bid.created_at,
+        'message': 'Bid placed successfully.',
+    }, status=201)
+
+
+@api_view(['POST'])
+@authentication_classes([SupabaseJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def auto_settle_bids(request):
+    """POST /api/recovery/settle-bids/ — Called by scheduler or admin to settle auctions where deadline has passed."""
+    from .models import RecoveryBid, Notification, AppUser
+    now = timezone.now()
+
+    # Find all DEFAULT cases whose bid_deadline has passed but are not yet assigned
+    cases = RecoveryCase.objects.filter(
+        recovery_stage='DEFAULT',
+        law_firm__isnull=True,
+        bid_deadline__lt=now,
+        bid_deadline__isnull=False,
+    )
+
+    settled = 0
+    for case in cases:
+        winning_bid = RecoveryBid.objects.filter(case=case, status='PENDING').order_by('-bid_amount').first()
+        if not winning_bid:
+            continue
+
+        with transaction.atomic():
+            # Assign winning law firm
+            case.law_firm = winning_bid.law_firm
+            case.recovery_stage = 'LEGAL_NOTICE_SENT'
+            case.assigned_date = now
+            case.save()
+
+            winning_bid.status = 'ACCEPTED'
+            winning_bid.save()
+
+            # Reject all others
+            RecoveryBid.objects.filter(case=case, status='PENDING').exclude(id=winning_bid.id).update(status='REJECTED')
+
+            # Notify winning law firm
+            Notification.objects.create(
+                user=winning_bid.law_firm.user,
+                message=f'Congratulations! Your bid of {winning_bid.bid_amount} MATIC won Recovery Case #{case.id} '
+                        f'for Pool "{case.pool.name}". The case has been assigned to you.',
+                link=f'/lawfirm/cases/{case.id}',
+            )
+
+            # Notify admins
+            for admin in AppUser.objects.filter(role='ADMIN', status='ACTIVE'):
+                Notification.objects.create(
+                    user=admin,
+                    message=f'Recovery Case #{case.id} auction settled. '
+                            f'Winner: {winning_bid.law_firm.firm_name} with {winning_bid.bid_amount} MATIC.',
+                    link=f'/admin/recovery-cases',
+                )
+
+            settled += 1
+
+    return Response({'settled': settled, 'message': f'{settled} case(s) settled.'})
+

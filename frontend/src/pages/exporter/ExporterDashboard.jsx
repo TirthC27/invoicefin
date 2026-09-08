@@ -49,7 +49,7 @@ function DonutChart({ data }) {
 
   return (
     <svg viewBox="0 0 100 100" style={{ width: '100%', maxWidth: 180, display: 'block', margin: '0 auto' }}>
-      <circle cx={center} cy={center} r={radius} fill="none" stroke="rgba(255,255,255,.06)" strokeWidth={14} />
+      <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--border)" strokeWidth={14} />
       {slices.map((slice) => (
         <circle
           key={slice.label}
@@ -64,10 +64,10 @@ function DonutChart({ data }) {
           style={{ transition: 'stroke-dasharray .4s ease', transformOrigin: '50% 50%' }}
         />
       ))}
-      <text x={center} y={center - 5} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="800">
+      <text x={center} y={center - 5} textAnchor="middle" fill="var(--fg-primary)" fontSize="11" fontWeight="800">
         {total}
       </text>
-      <text x={center} y={center + 9} textAnchor="middle" fill="#A0A0A8" fontSize="7">
+      <text x={center} y={center + 9} textAnchor="middle" fill="var(--fg-muted)" fontSize="7">
         Total
       </text>
     </svg>
@@ -83,14 +83,14 @@ function BarChart({ data }) {
         const pct = (item.value / max) * 100;
         return (
           <div key={item.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: '100%', height: `${Math.max(4, pct)}%`, borderRadius: '4px 4px 0 0', background: 'linear-gradient(180deg,#7C5CFC,#6B48F5)', minHeight: 4, transition: 'height .5s ease', position: 'relative' }}>
+            <div style={{ width: '100%', height: `${Math.max(4, pct)}%`, borderRadius: '4px 4px 0 0', background: 'var(--color-accent)', minHeight: 4, transition: 'height .5s ease', position: 'relative' }}>
               {item.value > 0 && (
-                <span style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: '#A0A0A8', whiteSpace: 'nowrap' }}>
+                <span style={{ position: 'absolute', top: -18, left: '50%', transform: 'translateX(-50%)', fontSize: 9, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
                   {item.value > 1000 ? `${(item.value / 1000).toFixed(0)}k` : item.value}
                 </span>
               )}
             </div>
-            <span style={{ fontSize: 9, color: '#606068', textAlign: 'center' }}>{item.label}</span>
+            <span style={{ fontSize: 9, color: 'var(--fg-muted)', textAlign: 'center' }}>{item.label}</span>
           </div>
         );
       })}
@@ -157,15 +157,15 @@ function computeMetrics(invoices) {
 
 function MetricCard({ label, value, sub, icon, color }) {
   return (
-    <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 16, padding: '18px 18px' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#A0A0A8', letterSpacing: '.2px' }}>{label}</div>
-        <div style={{ width: 34, height: 34, borderRadius: 10, background: `${color}18`, border: `1px solid ${color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div className="metric-card">
+      <div className="metric-card-header">
+        <span className="metric-card-label">{label}</span>
+        <div className="metric-card-icon" style={{ background: `${color}15` }}>
           {icon}
         </div>
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#E8E8F0', letterSpacing: '-.5px', marginBottom: 3 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: '#606068' }}>{sub}</div>}
+      <div className="metric-card-value" style={{ fontSize: 24 }}>{value}</div>
+      {sub && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }
@@ -213,47 +213,37 @@ export default function ExporterDashboard() {
   const recentActivities = activities.slice(0, 8);
 
   return (
-    <div style={{ color: '#fff', fontFamily: "'Inter',sans-serif" }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h2 style={{ margin: '0 0 4px', fontSize: 22, fontWeight: 800, letterSpacing: '-.5px' }}>Dashboard</h2>
-          <p style={{ margin: 0, fontSize: 13.5, color: '#A0A0A8' }}>Your invoice financing overview</p>
+    <div>
+      <div className="page-header">
+        <div className="page-header-left">
+          <h1>Exporter Dashboard</h1>
+          <p>Your invoice financing overview</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="page-header-actions">
           <button
             type="button"
             onClick={() => void loadDashboard(false)}
             disabled={refreshing}
-            style={{
-              height: 40, padding: '0 16px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-              background: 'rgba(255,255,255,.05)', color: '#A0A0A8', border: '1px solid rgba(255,255,255,.08)',
-              cursor: refreshing ? 'not-allowed' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 7,
-              fontFamily: 'inherit',
-            }}
+            className="btn btn-outline"
           >
-            <RotateCcw size={15} /> {refreshing ? 'Refreshing...' : 'Refresh'}
+            <RotateCcw size={14} /> {refreshing ? 'Refreshing...' : 'Refresh'}
           </button>
-          <Link to="/exporter/upload" style={{
-            height: 40, padding: '0 18px', borderRadius: 12, fontSize: 14, fontWeight: 600,
-            background: 'linear-gradient(135deg,#7C5CFC,#6B48F5)', color: '#fff',
-            textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7,
-            boxShadow: '0 4px 14px rgba(124,92,252,.3)',
-          }}>
-            <Plus size={16} /> Upload Invoice
+          <Link to="/exporter/upload" className="btn btn-primary" style={{ textDecoration: 'none' }}>
+            <Plus size={15} /> Upload Invoice
           </Link>
         </div>
       </div>
 
       {error && (
-        <div style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.25)', borderRadius: 12, padding: '12px 16px', marginBottom: 18, color: '#F87171', fontSize: 13 }}>
+        <div style={{ background: 'rgba(201,64,64,0.07)', border: '1px solid rgba(201,64,64,0.2)', borderRadius: 'var(--radius-md)', padding: '12px 16px', marginBottom: 18, color: 'var(--color-negative)', fontSize: 13 }}>
           {error}
         </div>
       )}
 
       {loading ? (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-          <div style={{ textAlign: 'center', color: '#A0A0A8' }}>
-            <div style={{ width: 36, height: 36, border: '3px solid rgba(124,92,252,.2)', borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+          <div style={{ textAlign: 'center', color: 'var(--fg-muted)' }}>
+            <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTopColor: 'var(--color-accent-strong)', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
             <p style={{ fontSize: 14, margin: 0 }}>Loading dashboard…</p>
             <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
           </div>
@@ -270,65 +260,69 @@ export default function ExporterDashboard() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 24 }}>
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '20px' }}>
-              <h4 style={{ margin: '0 0 16px', fontSize: 14, fontWeight: 700, color: '#E0E0E8' }}>Invoice Status</h4>
-              <DonutChart data={metrics.donutData} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 14 }}>
-                {metrics.donutData.map((item) => (
-                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
-                      <span style={{ color: '#A0A0A8' }}>{item.label}</span>
+            <div className="data-card">
+              <div className="data-card-header"><div className="data-card-title">Invoice Status</div></div>
+              <div className="data-card-body">
+                <DonutChart data={metrics.donutData} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 14 }}>
+                  {metrics.donutData.map((item) => (
+                    <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: item.color }} />
+                        <span style={{ color: 'var(--fg-secondary)' }}>{item.label}</span>
+                      </div>
+                      <span style={{ fontWeight: 700, color: 'var(--fg-primary)' }}>{item.value}</span>
                     </div>
-                    <span style={{ fontWeight: 700, color: '#E0E0E8' }}>{item.value}</span>
-                  </div>
-                ))}
-                {metrics.donutData.length === 0 && <div style={{ color: '#606068', fontSize: 12 }}>No invoices yet.</div>}
+                  ))}
+                  {metrics.donutData.length === 0 && <div style={{ color: 'var(--fg-muted)', fontSize: 12 }}>No invoices yet.</div>}
+                </div>
               </div>
             </div>
 
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: '20px' }}>
-              <h4 style={{ margin: '0 0 20px', fontSize: 14, fontWeight: 700, color: '#E0E0E8' }}>Monthly Funding (last 6 months)</h4>
-              <BarChart data={metrics.monthly} />
-              <div style={{ marginTop: 8, textAlign: 'center', fontSize: 11, color: '#505058' }}>
-                Completed invoice value per month
+            <div className="data-card">
+              <div className="data-card-header"><div className="data-card-title">Monthly Funding (last 6 months)</div></div>
+              <div className="data-card-body">
+                <BarChart data={metrics.monthly} />
+                <div style={{ marginTop: 8, textAlign: 'center', fontSize: 11, color: 'var(--fg-muted)' }}>
+                  Completed invoice value per month
+                </div>
               </div>
             </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '3fr 2fr', gap: 16 }}>
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Recent Invoices</h4>
-                <Link to="/exporter/invoices" style={{ fontSize: 13, color: '#7C5CFC', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
+            <div className="data-card">
+              <div className="data-card-header">
+                <div className="data-card-title">Recent Invoices</div>
+                <Link to="/exporter/invoices" style={{ fontSize: 13, color: 'var(--color-accent-fg)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3, fontWeight: 600 }}>
                   View all <ChevronRight size={14} />
                 </Link>
               </div>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <table className="data-table">
                   <thead>
-                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,.05)' }}>
+                    <tr>
                       {['Invoice', 'Buyer', 'Amount', 'Status'].map((heading) => (
-                        <th key={heading} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#606068', textTransform: 'uppercase', letterSpacing: '.5px' }}>{heading}</th>
+                        <th key={heading}>{heading}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {recentInvoices.map((invoice) => (
-                      <tr key={invoice.id} style={{ borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                        <td style={{ padding: '12px 16px' }}>
-                          <Link to={`/exporter/invoices/${invoice.id}`} style={{ color: '#E0E0E8', textDecoration: 'none', fontWeight: 600, fontSize: 13 }}>
+                      <tr key={invoice.id}>
+                        <td>
+                          <Link to={`/exporter/invoices/${invoice.id}`} style={{ color: 'var(--fg-primary)', textDecoration: 'none', fontWeight: 600 }}>
                             {invoice.invoice_number}
                           </Link>
                         </td>
-                        <td style={{ padding: '12px 16px', color: '#A0A0A8', fontSize: 12.5 }}>{invoice.buyer_company}</td>
-                        <td style={{ padding: '12px 16px', fontWeight: 700, fontSize: 13 }}>{fmtAmount(invoice.amount, invoice.currency)}</td>
-                        <td style={{ padding: '12px 16px' }}><StatusBadge status={invoice.status} /></td>
+                        <td style={{ color: 'var(--fg-secondary)' }}>{invoice.buyer_company}</td>
+                        <td style={{ fontWeight: 600 }}>{fmtAmount(invoice.amount, invoice.currency)}</td>
+                        <td><StatusBadge status={invoice.status} /></td>
                       </tr>
                     ))}
                     {recentInvoices.length === 0 && (
                       <tr>
-                        <td colSpan={4} style={{ padding: '30px', textAlign: 'center', color: '#505058', fontSize: 13 }}>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--fg-muted)' }}>
                           No invoices yet. Upload your first invoice!
                         </td>
                       </tr>
@@ -338,27 +332,29 @@ export default function ExporterDashboard() {
               </div>
             </div>
 
-            <div style={{ background: '#151518', border: '1px solid rgba(255,255,255,.07)', borderRadius: 18, padding: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,.06)' }}>
-                <Activity size={15} color="#7C5CFC" />
-                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Recent Activity</h4>
+            <div className="data-card">
+              <div className="data-card-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Activity size={15} style={{ color: 'var(--color-accent-strong)' }} />
+                  <div className="data-card-title">Recent Activity</div>
+                </div>
               </div>
-              <div style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <div className="data-card-body">
                 {recentActivities.length > 0 ? recentActivities.map((activity) => {
-                  const color = ACTION_COLOR_MAP[activity.action_type] || '#A0A0A8';
+                  const color = ACTION_COLOR_MAP[activity.action_type] || 'var(--fg-muted)';
                   return (
-                    <div key={activity.id} style={{ display: 'flex', gap: 10, padding: '9px 6px', borderBottom: '1px solid rgba(255,255,255,.04)' }}>
+                    <div key={activity.id} style={{ display: 'flex', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--border)' }}>
                       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, marginTop: 6, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ margin: '0 0 2px', fontSize: 12.5, color: '#D0D0D8', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        <p style={{ margin: '0 0 2px', fontSize: 12.5, color: 'var(--fg-secondary)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
                           {activity.description}
                         </p>
-                        <span style={{ fontSize: 11, color: '#505058' }}>{timeAgo(activity.timestamp)}</span>
+                        <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{timeAgo(activity.timestamp)}</span>
                       </div>
                     </div>
                   );
                 }) : (
-                  <p style={{ color: '#505058', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No activity yet.</p>
+                  <p style={{ color: 'var(--fg-muted)', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No activity yet.</p>
                 )}
               </div>
             </div>

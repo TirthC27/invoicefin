@@ -120,7 +120,7 @@ function BlockchainBg() {
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
-            ctx.strokeStyle = `rgba(124,92,252,${0.04 * (1 - dist / 160)})`;
+            ctx.strokeStyle = `rgba(91,122,91,${0.06 * (1 - dist / 160)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -129,7 +129,7 @@ function BlockchainBg() {
       nodes.forEach(n => {
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(124,92,252,0.06)';
+        ctx.fillStyle = 'rgba(91,122,91,0.08)';
         ctx.fill();
       });
       animId = requestAnimationFrame(draw);
@@ -179,30 +179,37 @@ export default function Signup() {
       return;
     }
 
-    console.log('[Signup] Attempting signup for:', email, 'role:', selectedRole);
+    console.log('[Signup] Attempting custom backend signup for:', email, 'role:', selectedRole);
 
     try {
-      // 1. Sign up via Supabase Auth with metadata
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: selectedRole,
-          },
+      // 1. Register via custom backend API
+      const response = await fetch(`${API_BASE}/auth/register/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ email, password, full_name: fullName, role: selectedRole }),
       });
 
-      console.log('[Signup] Supabase response:', { data, signupError });
+      const responseData = await response.json().catch(() => ({}));
 
-      if (signupError) throw signupError;
+      if (!response.ok) {
+        throw new Error(responseData.detail || responseData.error || 'Registration failed');
+      }
 
-      if (data?.user) {
-        // 2. Upsert profile row
+      // 2. Automatically log the user in
+      const { data, error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (loginError) {
+         setSuccess('Account created successfully! Please proceed to login.');
+      } else if (data?.session) {
+        // 3. Upsert profile row now that we are authenticated
         const { error: profileError } = await supabase.from('profiles').upsert({
-          id: data.user.id,
-          email: data.user.email,
+          id: responseData.id,
+          email: responseData.email,
           full_name: fullName,
           role: selectedRole,
         }, { onConflict: 'id' });
@@ -211,25 +218,7 @@ export default function Signup() {
           console.warn('[Signup] Profile upsert error (non-fatal):', profileError.message);
         }
 
-        if (data?.session) {
-          const syncResp = await fetch(`${API_BASE}/auth/sync-user/`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${data.session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ full_name: fullName, role }),
-          });
-
-          if (!syncResp.ok) {
-            const syncError = await syncResp.json().catch(() => ({}));
-            throw new Error(syncError.error || 'Account created, but role sync failed.');
-          }
-
-          navigate('/dashboard');
-        } else {
-          setSuccess('Account created! Check your email to confirm, then login.');
-        }
+        navigate('/dashboard');
       }
     } catch (err) {
       console.error('[Signup] Error:', err);
@@ -282,22 +271,21 @@ export default function Signup() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         .lp-root * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; }
-        .lp-root { background: #0B0B0F; color: #FFFFFF; display: flex; flex-direction: column; min-height: 100vh; }
+        .lp-root { background: var(--bg-base, #f5f4f0); color: var(--fg-primary, #1a1a1f); display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* Navbar */
-        .lp-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; background: rgba(11,11,15,0.8); border-bottom: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(12px); }
-        .lp-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-        .lp-logo-dot { width: 8px; height: 8px; border-radius: 50%; background: #7C5CFC; }
+        .lp-nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 64px; background: rgba(245,244,240,0.92); border-bottom: 1px solid var(--border, #e2e0da); backdrop-filter: blur(12px); }
+        .lp-logo { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; color: var(--fg-primary, #1a1a1f); letter-spacing: -0.3px; }
+        .lp-logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent-strong, #5b7a5b); }
         .lp-nav-links { display: flex; align-items: center; gap: 32px; }
-        .lp-nav-link { font-size: 14px; color: #A0A0A8; text-decoration: none; transition: color 0.2s; position: relative; padding-bottom: 2px; }
-        .lp-nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 1px; background: #7C5CFC; transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
-        .lp-nav-link:hover { color: #fff; }
+        .lp-nav-link { font-size: 14px; color: var(--fg-muted, #888); text-decoration: none; transition: color 0.2s; position: relative; padding-bottom: 2px; }
+        .lp-nav-link::after { content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 1px; background: var(--color-accent-strong, #5b7a5b); transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
+        .lp-nav-link:hover { color: var(--fg-primary, #1a1a1f); }
         .lp-nav-link:hover::after { transform: scaleX(1); }
 
         /* Layout */
         .lp-body { display: flex; flex: 1; padding-top: 64px; min-height: 0; }
-        .lp-left { flex: 0 0 60%; padding: 48px 60px 48px 60px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
-        .lp-right { flex: 0 0 40%; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 1px solid rgba(255,255,255,0.05); background: #0E0E12; overflow-y: auto; }
+        .lp-left { flex: 0 0 60%; padding: 48px 60px 48px 60px; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; background: linear-gradient(135deg, #f5f4f0 0%, #eae8e2 100%); }
+        .lp-right { flex: 0 0 40%; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-left: 1px solid var(--border, #e2e0da); background: #faf9f6; overflow-y: auto; }
 
         @media (min-width: 769px) {
           .lp-root { height: 100vh; overflow: hidden; }
@@ -307,34 +295,34 @@ export default function Signup() {
         }
 
         /* Left side heading */
-        .lp-heading { font-size: 42px; font-weight: 800; line-height: 1.15; letter-spacing: -1.5px; color: #fff; margin-bottom: 16px; }
-        .lp-heading-accent { color: #7C5CFC; }
-        .lp-subheading { font-size: 14.5px; color: #A0A0A8; line-height: 1.6; max-width: 460px; margin-bottom: 28px; }
+        .lp-heading { font-size: 42px; font-weight: 800; line-height: 1.15; letter-spacing: -1.5px; color: var(--fg-primary, #1a1a1f); margin-bottom: 16px; }
+        .lp-heading-accent { color: var(--color-accent-strong, #5b7a5b); }
+        .lp-subheading { font-size: 14.5px; color: var(--fg-muted, #888); line-height: 1.6; max-width: 460px; margin-bottom: 28px; }
 
         /* Workflow card */
-        .lp-workflow-card { background: #151518; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; }
-        .lp-workflow-title { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: #A0A0A8; text-transform: uppercase; margin-bottom: 16px; }
+        .lp-workflow-card { background: rgba(255,255,255,0.7); border: 1px solid var(--border, #e2e0da); border-radius: 16px; padding: 20px 24px; margin-bottom: 24px; backdrop-filter: blur(8px); }
+        .lp-workflow-title { font-size: 11px; font-weight: 600; letter-spacing: 1.2px; color: var(--fg-muted, #888); text-transform: uppercase; margin-bottom: 16px; }
         .lp-workflow-steps { display: flex; align-items: center; gap: 0; }
         .lp-step { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; }
-        .lp-step-icon-wrap { width: 42px; height: 42px; border-radius: 12px; background: rgba(124,92,252,0.08); border: 1px solid rgba(124,92,252,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; transition: transform 0.2s, background 0.2s; cursor: default; }
-        .lp-step:hover .lp-step-icon-wrap { transform: translateY(-2px); background: rgba(124,92,252,0.15); }
-        .lp-step-num { font-size: 9px; font-weight: 700; color: #7C5CFC; letter-spacing: 0.5px; }
-        .lp-step-label { font-size: 11px; font-weight: 500; color: #A0A0A8; text-align: center; line-height: 1.3; }
-        .lp-step-arrow { color: rgba(124,92,252,0.45); flex-shrink: 0; padding: 0 4px; display: flex; align-items: center; margin-bottom: 22px; }
+        .lp-step-icon-wrap { width: 42px; height: 42px; border-radius: 12px; background: rgba(91,122,91,0.08); border: 1px solid rgba(91,122,91,0.2); display: flex; align-items: center; justify-content: center; font-size: 18px; transition: transform 0.2s, background 0.2s; cursor: default; }
+        .lp-step:hover .lp-step-icon-wrap { transform: translateY(-2px); background: rgba(91,122,91,0.15); }
+        .lp-step-num { font-size: 9px; font-weight: 700; color: var(--color-accent-strong, #5b7a5b); letter-spacing: 0.5px; }
+        .lp-step-label { font-size: 11px; font-weight: 500; color: var(--fg-muted, #888); text-align: center; line-height: 1.3; }
+        .lp-step-arrow { color: rgba(91,122,91,0.45); flex-shrink: 0; padding: 0 4px; display: flex; align-items: center; margin-bottom: 22px; }
         .lp-step-arrow svg { transition: filter 0.3s; }
-        .lp-workflow-card:hover .lp-step-arrow svg { filter: drop-shadow(0 0 4px rgba(124,92,252,0.7)); }
+        .lp-workflow-card:hover .lp-step-arrow svg { filter: drop-shadow(0 0 4px rgba(91,122,91,0.5)); }
 
         /* Analytics cards */
         .lp-analytics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-        .lp-analytics-card { background: #151518; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px; transition: transform 0.3s, box-shadow 0.3s; animation: cardFloat 6s ease-in-out infinite; }
+        .lp-analytics-card { background: rgba(255,255,255,0.7); border: 1px solid var(--border, #e2e0da); border-radius: 14px; padding: 16px; transition: transform 0.3s, box-shadow 0.3s; animation: cardFloat 6s ease-in-out infinite; backdrop-filter: blur(8px); }
         .lp-analytics-card:nth-child(2) { animation-delay: 2s; }
         .lp-analytics-card:nth-child(3) { animation-delay: 4s; }
-        .lp-analytics-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(124,92,252,0.08); }
-        .lp-analytics-value { font-size: 20px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 2px; }
-        .lp-analytics-label { font-size: 11.5px; color: #A0A0A8; margin-bottom: 10px; }
+        .lp-analytics-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(91,122,91,0.1); }
+        .lp-analytics-value { font-size: 20px; font-weight: 800; color: var(--fg-primary, #1a1a1f); letter-spacing: -0.5px; margin-bottom: 2px; }
+        .lp-analytics-label { font-size: 11.5px; color: var(--fg-muted, #888); margin-bottom: 10px; }
         .lp-analytics-footer { display: flex; align-items: center; justify-content: space-between; }
         .lp-trend { font-size: 10.5px; font-weight: 600; }
-        .lp-trend.up { color: #22C55E; }
+        .lp-trend.up { color: var(--color-positive, #16a34a); }
 
         @keyframes cardFloat {
           0%, 100% { transform: translateY(0); }
@@ -353,9 +341,9 @@ export default function Signup() {
         .lp-fade-in-delay-3 { animation: lpFadeIn 0.5s 0.24s ease-out both; }
 
         /* Auth card */
-        .lp-auth-card { background: #151518; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 24px 28px; box-shadow: 0 20px 48px rgba(0,0,0,0.4); width: 100%; max-width: 420px; margin: auto 0; flex-shrink: 0; }
-        .lp-auth-title { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.6px; margin-bottom: 4px; }
-        .lp-auth-subtitle { font-size: 13px; color: #A0A0A8; margin-bottom: 20px; line-height: 1.4; }
+        .lp-auth-card { background: #ffffff; border: 1px solid var(--border, #e2e0da); border-radius: 20px; padding: 24px 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.08); width: 100%; max-width: 420px; margin: auto 0; flex-shrink: 0; }
+        .lp-auth-title { font-size: 24px; font-weight: 800; color: var(--fg-primary, #1a1a1f); letter-spacing: -0.6px; margin-bottom: 4px; }
+        .lp-auth-subtitle { font-size: 13px; color: var(--fg-muted, #888); margin-bottom: 20px; line-height: 1.4; }
 
         /* Banners */
         .lp-error { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); color: #EF4444; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
@@ -363,36 +351,36 @@ export default function Signup() {
 
         /* Input groups */
         .lp-input-group { margin-bottom: 12px; }
-        .lp-label { font-size: 12px; font-weight: 500; color: #A0A0A8; margin-bottom: 4px; display: block; }
+        .lp-label { font-size: 12px; font-weight: 500; color: var(--fg-muted, #888); margin-bottom: 4px; display: block; }
         .lp-input-wrap { position: relative; display: flex; align-items: center; }
-        .lp-input-icon { position: absolute; left: 14px; color: #A0A0A8; pointer-events: none; display: flex; align-items: center; }
-        .lp-input { width: 100%; height: 46px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 0 40px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
-        .lp-select { width: 100%; height: 46px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #fff; font-size: 14px; padding: 0 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
-        .lp-select option { background: #151518; color: #fff; }
-        .lp-select:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
-        .lp-input::placeholder { color: rgba(160,160,168,0.45); }
-        .lp-input:focus { border-color: #7C5CFC; box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
-        .lp-input-right { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: #A0A0A8; display: flex; align-items: center; padding: 4px; transition: color 0.2s; }
-        .lp-input-right:hover { color: #fff; }
+        .lp-input-icon { position: absolute; left: 14px; color: var(--fg-muted, #888); pointer-events: none; display: flex; align-items: center; }
+        .lp-input { width: 100%; height: 46px; background: var(--bg-card, #fff); border: 1px solid var(--border, #e2e0da); border-radius: 10px; color: var(--fg-primary, #1a1a1f); font-size: 14px; padding: 0 40px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
+        .lp-select { width: 100%; height: 46px; background: var(--bg-card, #fff); border: 1px solid var(--border, #e2e0da); border-radius: 10px; color: var(--fg-primary, #1a1a1f); font-size: 14px; padding: 0 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; font-family: inherit; }
+        .lp-select option { background: var(--bg-card, #fff); color: var(--fg-primary, #1a1a1f); }
+        .lp-select:focus { border-color: var(--color-accent-strong, #5b7a5b); box-shadow: 0 0 0 3px rgba(91,122,91,0.12); }
+        .lp-input::placeholder { color: var(--fg-muted, #aaa); }
+        .lp-input:focus { border-color: var(--color-accent-strong, #5b7a5b); box-shadow: 0 0 0 3px rgba(91,122,91,0.12); }
+        .lp-input-right { position: absolute; right: 12px; background: none; border: none; cursor: pointer; color: var(--fg-muted, #888); display: flex; align-items: center; padding: 4px; transition: color 0.2s; }
+        .lp-input-right:hover { color: var(--fg-primary, #1a1a1f); }
 
         /* Primary button */
-        .lp-btn-primary { width: 100%; height: 46px; background: linear-gradient(135deg, #7C5CFC 0%, #6B48F5 100%); color: #fff; font-size: 14.5px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, background 0.2s; letter-spacing: 0.1px; font-family: inherit; position: relative; overflow: hidden; margin-top: 10px; }
-        .lp-btn-primary:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 6px 16px rgba(124,92,252,0.3); background: linear-gradient(135deg, #8E73FF 0%, #7C5CFC 100%); }
+        .lp-btn-primary { width: 100%; height: 46px; background: linear-gradient(135deg, var(--color-accent-strong,#5b7a5b) 0%, #4a6b4a 100%); color: #fff; font-size: 14.5px; font-weight: 600; border: none; border-radius: 12px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s, background 0.2s; letter-spacing: 0.1px; font-family: inherit; position: relative; overflow: hidden; margin-top: 10px; }
+        .lp-btn-primary:hover:not(:disabled) { transform: translateY(-1.5px); box-shadow: 0 6px 16px rgba(91,122,91,0.25); }
         .lp-btn-primary:active:not(:disabled) { transform: translateY(0); }
         .lp-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
 
         /* Sign-up link */
-        .lp-signup-row { margin-top: 18px; text-align: center; font-size: 13.5px; color: #A0A0A8; }
-        .lp-signup-link { color: #7C5CFC; font-weight: 600; text-decoration: none; transition: color 0.2s; }
-        .lp-signup-link:hover { color: #8E73FF; }
+        .lp-signup-row { margin-top: 18px; text-align: center; font-size: 13.5px; color: var(--fg-muted, #888); }
+        .lp-signup-link { color: var(--color-accent-strong, #5b7a5b); font-weight: 600; text-decoration: none; transition: color 0.2s; }
+        .lp-signup-link:hover { color: var(--fg-primary, #1a1a1f); }
 
         /* Footer */
-        .lp-footer { background: #0B0B0F; border-top: 1px solid rgba(255,255,255,0.05); padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-        .lp-footer-copy { font-size: 11px; color: rgba(160,160,168,0.45); }
+        .lp-footer { background: var(--bg-muted, #eee); border-top: 1px solid var(--border, #e2e0da); padding: 14px 40px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .lp-footer-copy { font-size: 11px; color: var(--fg-muted, #888); }
         .lp-footer-center { display: flex; align-items: center; gap: 20px; }
-        .lp-footer-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: rgba(160,160,168,0.45); }
+        .lp-footer-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-muted, #888); }
         .lp-footer-badge svg { opacity: 0.35; }
-        .lp-footer-right { display: flex; align-items: center; gap: 6px; font-size: 11px; color: rgba(160,160,168,0.45); }
+        .lp-footer-right { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--fg-muted, #888); }
 
         /* Responsive & Short Viewports scaling */
         @media (min-width: 769px) and (max-height: 800px) {

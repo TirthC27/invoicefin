@@ -8,9 +8,9 @@ import { X, TrendingUp, AlertCircle, Loader2 } from 'lucide-react';
 import { exporterApi } from '../../lib/api';
 
 const INPUT_BASE = {
-  background: 'rgba(255,255,255,.05)',
-  border: '1px solid rgba(255,255,255,.1)',
-  borderRadius: 10, color: '#fff', fontSize: 14,
+  background: 'var(--bg-card, #fff)',
+  border: '1px solid var(--border, #e2e0da)',
+  borderRadius: 10, color: 'var(--fg-primary, #1a1a1f)', fontSize: 14,
   padding: '10px 14px', outline: 'none',
   width: '100%', boxSizing: 'border-box',
   fontFamily: "'Inter',sans-serif",
@@ -20,13 +20,13 @@ const INPUT_BASE = {
 function Field({ label, error, hint, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <label style={{ fontSize: 12.5, fontWeight: 600, color: error ? '#F87171' : '#A0A0A8', letterSpacing: '.2px' }}>
-        {label} <span style={{ color: '#7C5CFC' }}>*</span>
+      <label style={{ fontSize: 12.5, fontWeight: 600, color: error ? 'var(--color-negative)' : 'var(--fg-muted)', letterSpacing: '.2px' }}>
+        {label} <span style={{ color: 'var(--color-accent-strong)' }}>*</span>
       </label>
       {children}
-      {hint && !error && <span style={{ fontSize: 11, color: '#606068' }}>{hint}</span>}
+      {hint && !error && <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{hint}</span>}
       {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#F87171' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: 'var(--color-negative)' }}>
           <AlertCircle size={11} /> {error}
         </div>
       )}
@@ -102,23 +102,23 @@ export default function CreatePoolModal({ invoice, onClose, onSuccess }) {
 
   const inputStyle = (k) => ({
     ...INPUT_BASE,
-    borderColor: errors[k] ? 'rgba(248,113,113,.5)' : 'rgba(255,255,255,.1)',
+    borderColor: errors[k] ? 'rgba(220,38,38,.5)' : 'var(--border, #e2e0da)',
   });
 
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9998,
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      backgroundColor: 'rgba(11,11,15,.85)', backdropFilter: 'blur(12px)',
+      backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(12px)',
       padding: 20,
     }}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div style={{
-        width: '100%', maxWidth: 520, background: '#151518',
-        border: '1px solid rgba(255,255,255,.1)', borderRadius: 24,
-        padding: '32px 28px', color: '#fff', fontFamily: "'Inter',sans-serif",
-        boxShadow: '0 24px 60px rgba(0,0,0,.5)',
+        width: '100%', maxWidth: 520, background: 'var(--bg-card, #fff)',
+        border: '1px solid var(--border, #e2e0da)', borderRadius: 24,
+        padding: '32px 28px', color: 'var(--fg-primary, #1a1a1f)', fontFamily: "'Inter',sans-serif",
+        boxShadow: '0 24px 60px rgba(0,0,0,.12)',
         maxHeight: '90vh', overflowY: 'auto',
       }}>
         {/* Header */}
@@ -129,10 +129,10 @@ export default function CreatePoolModal({ invoice, onClose, onSuccess }) {
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Create Investment Pool</h3>
-              <p style={{ margin: 0, fontSize: 12, color: '#A0A0A8' }}>{invoice?.invoice_number} — {invoice?.currency} {Number(invoice?.amount).toLocaleString()}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted, #888)' }}>{invoice?.invoice_number} — {invoice?.currency} {Number(invoice?.amount).toLocaleString()}</p>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 8, color: '#A0A0A8', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          <button onClick={onClose} style={{ background: 'var(--bg-muted, #eee)', border: '1px solid var(--border, #e2e0da)', borderRadius: 8, color: 'var(--fg-muted, #888)', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
             <X size={16} />
           </button>
         </div>
