@@ -81,3 +81,7 @@ Thumbs.db
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+# Standalone external projects
+ecommerce-analytics-dashboard/
+ecommerce-analytics*/
