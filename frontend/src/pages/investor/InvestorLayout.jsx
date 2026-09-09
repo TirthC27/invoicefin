@@ -59,12 +59,8 @@ export default function InvestorLayout() {
           accentColor="#ffffff"
           rightExtra={
             <button
-              className="btn btn-outline btn-sm"
+              className="app-header-wallet-btn"
               onClick={wallet?.isConnected ? wallet?.disconnectWallet : wallet?.connectWallet}
-              style={{
-                borderColor: wallet?.isConnected ? 'rgba(0,0,0,0.2)' : undefined,
-                color: wallet?.isConnected ? '#111111' : undefined,
-              }}
             >
               {walletLabel}
             </button>

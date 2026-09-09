@@ -1,16 +1,9 @@
 import React from 'react';
+import CircleExpandCard from './CircleExpandCard';
 
 /**
  * MetricCard — matches the ecommerce-analytics dashboard stat card.
  * Shows an icon top-right, a large value, and an optional change badge.
- *
- * @param {string} title
- * @param {string|number} value
- * @param {string} change - e.g. "+2.4%", "-0.6%", or null
- * @param {boolean} isPositive - controls badge color
- * @param {React.ComponentType} icon - Lucide icon component
- * @param {string} prefix - e.g. "MATIC " or "$"
- * @param {string} suffix - e.g. " MATIC"
  */
 export default function MetricCard({
   title,
@@ -28,7 +21,7 @@ export default function MetricCard({
       : 'negative';
 
   return (
-    <div className="metric-card">
+    <CircleExpandCard className="metric-card">
       <div className="metric-card-header">
         <span className="metric-card-label">{title}</span>
         {Icon && (
@@ -45,6 +38,6 @@ export default function MetricCard({
           {change}
         </span>
       )}
-    </div>
+    </CircleExpandCard>
   );
 }

@@ -18,6 +18,7 @@ import {
 import { exporterApi } from '../../lib/api';
 import { STATUS_COLOR, fmtAmount, timeAgo } from './exporterUtils';
 import StatusBadge from './StatusBadge';
+import CircleExpandCard from '../../components/CircleExpandCard';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -157,7 +158,7 @@ function computeMetrics(invoices) {
 
 function MetricCard({ label, value, sub, icon, color }) {
   return (
-    <div className="metric-card">
+    <CircleExpandCard className="metric-card">
       <div className="metric-card-header">
         <span className="metric-card-label">{label}</span>
         <div className="metric-card-icon" style={{ background: `${color}15` }}>
@@ -166,7 +167,7 @@ function MetricCard({ label, value, sub, icon, color }) {
       </div>
       <div className="metric-card-value" style={{ fontSize: 24 }}>{value}</div>
       {sub && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginTop: 4 }}>{sub}</div>}
-    </div>
+    </CircleExpandCard>
   );
 }
 

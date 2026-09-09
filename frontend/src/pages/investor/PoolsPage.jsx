@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { investorApi } from '../../lib/api';
 import { Search, TrendingUp, ChevronRight, Percent } from 'lucide-react';
 
+
 const POLL_INTERVAL = 10000;
 
 /* Skeleton card for loading state */
@@ -131,18 +132,15 @@ export default function PoolsPage() {
           border-radius: 14px !important;
           background: #ffffff !important;
           border: 1px solid rgba(0, 0, 0, 0.08) !important;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-          transition: box-shadow 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
-                      transform 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
+          box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+          transition: transform 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
+                      box-shadow 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
                       border-color 0.25s ease !important;
         }
         .pool-card-wrap:hover {
-          box-shadow: 0 14px 28px rgba(0, 0, 0, 0.10) !important;
-          transform: translateY(-4px) !important;
           border-color: rgba(0, 0, 0, 0.14) !important;
-        }
-        .pool-card-wrap:active {
-          transform: translateY(-1px) scale(0.99) !important;
+          transform: translateY(-3px) !important;
+          box-shadow: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12) !important;
         }
         .pool-card-base-content {
           transition: transform 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),

@@ -6,6 +6,7 @@ import {
   CheckCircle2, Clock, Calendar, Download
 } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
+import CircleExpandCard from '../../components/CircleExpandCard';
 import {
   LineChart, Line, PieChart, Pie, Cell, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -230,7 +231,7 @@ export default function InvestorDashboard() {
             ) : (
               <div style={{ height: 160, display: 'flex', alignItems: 'center',
                 justifyContent: 'center', color: 'var(--fg-muted)', fontSize: 13 }}>
-                Returns will appear as investments complete.
+                No completed investments yet.
               </div>
             )}
           </div>

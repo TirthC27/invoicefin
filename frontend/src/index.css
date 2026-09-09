@@ -45,10 +45,10 @@
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Shadows - subtle light mode elevation */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 14px 28px rgba(0, 0, 0, 0.10);
+  /* Shadows - enhanced elevation for card visibility */
+  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 18px 34px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
 /* ── Reset & Base ────────────────────────────────────── */
@@ -408,7 +408,7 @@ svg {
   border-radius: var(--radius-lg);
   padding: 22px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08);
   transition: box-shadow 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
               transform 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
               border-color 0.25s ease;
@@ -416,8 +416,7 @@ svg {
 
 .metric-card:hover {
   border-color: rgba(0, 0, 0, 0.14);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.10);
-  transform: translateY(-2px);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12);
 }
 
 .metric-card-header {
@@ -485,13 +484,118 @@ svg {
   border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08);
   transition: border-color 0.25s ease, box-shadow 0.35s cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 
 .data-card:hover {
   border-color: rgba(0, 0, 0, 0.14);
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Circle Expand Card Animation ────────────────────── */
+.circle-expand-card {
+  position: relative !important;
+  overflow: hidden !important;
+  color: #111111;
+  transition: box-shadow 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
+              transform 0.35s cubic-bezier(0.22, 0.9, 0.3, 1),
+              border-color 0.25s ease !important;
+}
+
+.circle-expand-card .circle-expand-bg {
+  transform: scale(0);
+  opacity: 0;
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+}
+
+.circle-expand-card:hover .circle-expand-bg {
+  transform: scale(18);
+  opacity: 1;
+}
+
+.circle-expand-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 0, 0, 0.16);
+  box-shadow: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12);
+}
+
+/* Synchronized text & icon color transition: black -> white on hover */
+.circle-expand-card .circle-expand-content,
+.circle-expand-card .metric-card-label,
+.circle-expand-card .metric-card-value,
+.circle-expand-card .data-card-title,
+.circle-expand-card .data-card-subtitle,
+.circle-expand-card p,
+.circle-expand-card span,
+.circle-expand-card div,
+.circle-expand-card h1,
+.circle-expand-card h2,
+.circle-expand-card h3 {
+  transition: color 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, opacity 0.3s ease;
+}
+
+.circle-expand-card:hover .circle-expand-content,
+.circle-expand-card:hover .metric-card-label,
+.circle-expand-card:hover .metric-card-value,
+.circle-expand-card:hover .data-card-title,
+.circle-expand-card:hover p,
+.circle-expand-card:hover span:not(.pool-status-badge),
+.circle-expand-card:hover div:not(.metric-card-icon):not(.pool-progress-fill),
+.circle-expand-card:hover h1,
+.circle-expand-card:hover h2,
+.circle-expand-card:hover h3 {
+  color: #ffffff !important;
+}
+
+.circle-expand-card .metric-card-label,
+.circle-expand-card .data-card-subtitle {
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.circle-expand-card:hover .metric-card-label,
+.circle-expand-card:hover .data-card-subtitle {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.circle-expand-card svg {
+  transition: stroke 0.32s cubic-bezier(0.22, 1, 0.36, 1) 0.08s, color 0.32s ease 0.08s;
+}
+
+.circle-expand-card:hover svg {
+  stroke: #ffffff;
+}
+
+.circle-expand-card .metric-card-icon {
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+.circle-expand-card:hover .metric-card-icon {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* ── Navbar Wallet Address Chip ──────────────────────── */
+.app-header-wallet-btn {
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 15px !important;
+  border-radius: 50px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.app-header-wallet-btn:hover {
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
 }
 
 .data-card-header {

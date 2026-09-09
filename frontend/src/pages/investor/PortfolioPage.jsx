@@ -3,6 +3,7 @@ import { investorApi } from '../../lib/api';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion as Motion } from 'framer-motion';
 import { Clock, TrendingUp, CheckCircle2, ChevronRight } from 'lucide-react';
+import CircleExpandCard from '../../components/CircleExpandCard';
 
 const POLL_INTERVAL = 10000;
 
@@ -126,16 +127,16 @@ export default function PortfolioPage() {
       <div className="grid-4" style={{ marginBottom: 24 }}>
         {[
           { label: 'Total Invested', value: `${Number(p.total_invested || 0).toFixed(4)} MATIC` },
-          { label: 'Current Value', value: `${Number(p.current_value || 0).toFixed(4)} MATIC`, accent: 'var(--color-investor)' },
-          { label: 'Total Profit',  value: `+${Number(p.total_profit || 0).toFixed(4)} MATIC`, accent: 'var(--color-positive)' },
-          { label: 'Pending Returns', value: `${Number(p.pending_returns || 0).toFixed(4)} MATIC`, accent: '#d97706' },
+          { label: 'Current Value', value: `${Number(p.current_value || 0).toFixed(4)} MATIC` },
+          { label: 'Total Profit',  value: `+${Number(p.total_profit || 0).toFixed(4)} MATIC` },
+          { label: 'Pending Returns', value: `${Number(p.pending_returns || 0).toFixed(4)} MATIC` },
         ].map(card => (
-          <div key={card.label} className="metric-card">
+          <CircleExpandCard key={card.label} className="metric-card">
             <div className="metric-card-label" style={{ marginBottom: 8 }}>{card.label}</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: card.accent || 'var(--fg-primary)', fontFamily: 'monospace' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, fontFamily: 'monospace' }}>
               {card.value}
             </div>
-          </div>
+          </CircleExpandCard>
         ))}
       </div>
 
