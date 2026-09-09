@@ -187,7 +187,7 @@ export default function UploadInvoice() {
             {/* Section 1: Invoice Info */}
             <div className="data-card" style={{ padding: '22px 20px', marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                <FileText size={16} color="var(--color-accent-strong, #5b7a5b)" />
+                <FileText size={16} color="#ffffff" />
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Invoice Information</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -221,7 +221,7 @@ export default function UploadInvoice() {
             {/* Section 2: Buyer Info */}
             <div className="data-card" style={{ padding: '22px 20px', marginBottom: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
-                <Upload size={16} color="#d97706" />
+                <Upload size={16} color="#ffffff" />
                 <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Buyer Details</h3>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -261,8 +261,8 @@ export default function UploadInvoice() {
         </form>
         <style>{`
           @keyframes uSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-          input[type=date]::-webkit-calendar-picker-indicator{filter:none}
-          select option{background:var(--bg-card,#fff);color:var(--fg-primary,#1a1a1f)}
+          input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1)}
+          select option{background:#121412;color:#ffffff}
         `}</style>
     </>
   );

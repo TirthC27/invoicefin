@@ -208,8 +208,9 @@ export default function PoolDetailPage() {
         </div>
         <span style={{
           padding: '6px 14px', borderRadius: 10, fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
-          background: pool.is_settled ? 'rgba(34,197,94,0.1)' : filled >= 100 ? 'rgba(124,92,252,0.1)' : 'rgba(59,130,246,0.1)',
-          color: pool.is_settled ? '#16a34a' : filled >= 100 ? '#7C5CFC' : '#2563eb',
+          background: 'rgba(255,255,255,0.08)',
+          color: '#ffffff',
+          border: '1px solid rgba(255,255,255,0.12)',
         }}>
           {pool.is_settled ? 'Settled' : filled >= 100 ? 'Fully Funded' : 'Open'}
         </span>
@@ -221,8 +222,8 @@ export default function PoolDetailPage() {
           <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Pool Details</div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 20 }}>
             {[
-              { label: 'Annual Yield (APY)', value: `${Number(pool.apy).toFixed(2)}%`, color: 'var(--color-positive)' },
-              { label: 'ROI (Duration)',     value: `${pool.roi}%`, color: '#7C5CFC' },
+              { label: 'Annual Yield (APY)', value: `${Number(pool.apy).toFixed(2)}%`, color: '#ffffff' },
+              { label: 'ROI (Duration)',     value: `${pool.roi}%`, color: '#ffffff' },
               { label: 'Duration',           value: `${pool.duration_days} days` },
               { label: 'Days Remaining',     value: `${pool.days_remaining}d` },
               { label: 'Total Size',         value: `${Number(pool.total_size).toFixed(4)} MATIC` },
@@ -240,7 +241,8 @@ export default function PoolDetailPage() {
               <div style={{
                 height: '100%', borderRadius: 5, transition: 'width 0.8s ease',
                 width: `${Math.min(100, filled)}%`,
-                background: filled >= 100 ? 'linear-gradient(90deg, var(--color-accent-strong), #22c55e)' : 'var(--color-accent-strong)',
+                background: '#ffffff',
+                boxShadow: '0 0 10px rgba(255,255,255,0.3)',
               }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: 'var(--fg-muted)' }}>
@@ -364,7 +366,7 @@ export default function PoolDetailPage() {
                   {amount} MATIC invested in {pool.name}
                 </div>
                 {calcData && <div style={{ fontSize: 14, color: 'var(--color-positive)', fontWeight: 600 }}>Expected profit: +{Number(calcData.expected_profit).toFixed(6)} MATIC</div>}
-                <button className="btn btn-primary" style={{ marginTop: 24, width: '100%', justifyContent: 'center', background: 'rgba(34,197,94,0.15)', color: 'var(--color-positive)', borderColor: 'rgba(34,197,94,0.3)' }}
+                <button className="btn btn-primary" style={{ marginTop: 24, width: '100%', justifyContent: 'center', background: '#111111', color: '#ffffff', borderColor: '#111111' }}
                   onClick={() => navigate('/investor/portfolio')}>
                   View Portfolio
                 </button>

@@ -115,6 +115,54 @@ export default function InvoicesPage() {
 
   return (
     <div>
+      <style>{`
+        @keyframes invRowIn {
+          from { opacity: 0; transform: translateX(-4px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes invShimmer {
+          0%   { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .inv-sk {
+          background: linear-gradient(90deg, var(--bg-muted) 25%, var(--border) 50%, var(--bg-muted) 75%);
+          background-size: 200% 100%;
+          animation: invShimmer 1.5s ease-in-out infinite;
+          border-radius: 5px;
+        }
+        .inv-th-sort {
+          transition: color 0.14s ease, background 0.14s ease;
+          border-radius: 6px;
+          padding: 8px 10px;
+        }
+        .inv-th-sort:hover { color: var(--fg-primary) !important; background: var(--bg-muted); }
+        tbody tr { transition: background 0.12s ease; }
+        .inv-row:hover { background: var(--bg-muted); }
+        .inv-action-link {
+          transition: color 0.14s, opacity 0.14s, transform 0.16s cubic-bezier(0.34,1.56,0.64,1);
+          display: inline-flex; align-items: center; gap: 3px;
+        }
+        .inv-action-link:hover { opacity: 0.75; transform: translateX(2px); }
+        .inv-pool-btn {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: rgba(255,255,255,.08); color: #ffffff;
+          border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
+          padding: 4px 11px; text-decoration: none;
+          font-size: 12px; font-weight: 700;
+          transition: background 0.16s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.16s;
+        }
+        .inv-pool-btn:hover { background: rgba(255,255,255,.16); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+        .inv-pool-btn:active { transform: scale(0.96); }
+        .inv-pg-btn {
+          transition: background 0.14s, border-color 0.14s, color 0.14s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .inv-pg-btn:not(.inv-pg-active):hover {
+          border-color: var(--border-strong) !important;
+          color: var(--fg-primary) !important;
+          transform: translateY(-1px);
+        }
+        .inv-pg-btn:active { transform: scale(0.93) !important; }
+      `}</style>
       {/* Header */}
       <div className="page-header">
         <div className="page-header-left">
@@ -184,13 +232,17 @@ export default function InvoicesPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--fg-muted)' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--color-accent-strong)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    Loading invoices…
-                  </div>
-                  <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-                </td></tr>
+                <>
+                  {[...Array(6)].map((_, i) => (
+                    <tr key={i}>
+                      {[140, 120, 80, 70, 70, 70, 70, 50].map((w, j) => (
+                        <td key={j} style={{ padding: '14px 14px' }}>
+                          <div className="inv-sk" style={{ width: w, height: 13 }} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </>
               ) : invoices.length === 0 ? (
                 <tr><td colSpan={8} style={{ padding: '48px 20px', textAlign: 'center', color: 'var(--fg-muted)' }}>
                   No invoices found.{search || statusFilter ? ' Try adjusting your filters.' : ' Upload your first invoice to get started.'}
@@ -198,24 +250,24 @@ export default function InvoicesPage() {
               ) : invoices.map((inv) => {
                 const fundPct = inv.funding_percent ?? 0;
                 return (
-                  <tr key={inv.id}>
-                    <td style={{ fontWeight: 700 }}>
+                  <tr key={inv.id} className="inv-row" style={{ animation: `invRowIn 0.22s ${Math.min(0.04 * (invoices.indexOf(inv)), 0.3)}s ease both` }}>
+                    <td style={{ fontWeight: 700, letterSpacing: '-0.1px' }}>
                       <Link to={`/exporter/invoices/${inv.id}`} style={{ color: 'var(--fg-primary)', textDecoration: 'none' }}>
                         {inv.invoice_number}
                       </Link>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500 }}>{inv.buyer_name}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--fg-muted)' }}>{inv.buyer_company}</div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{inv.buyer_name}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--fg-muted)', marginTop: 1 }}>{inv.buyer_company}</div>
                     </td>
-                    <td style={{ fontWeight: 700 }}>{fmtAmount(inv.amount, inv.currency)}</td>
+                    <td style={{ fontWeight: 700, letterSpacing: '-0.2px' }}>{fmtAmount(inv.amount, inv.currency)}</td>
                     <td><StatusBadge status={inv.status} /></td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <div style={{ width: 60, height: 5, borderRadius: 99, background: 'var(--bg-muted)' }}>
-                          <div style={{ height: '100%', width: `${Math.min(100, fundPct)}%`, borderRadius: 99, background: fundPct >= 100 ? 'var(--color-positive)' : 'var(--color-accent-strong)' }} />
+                        <div style={{ width: 60, height: 5, borderRadius: 99, background: 'var(--bg-muted)', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(100, fundPct)}%`, borderRadius: 99, background: fundPct >= 100 ? 'var(--color-positive)' : 'var(--color-accent-strong)', transition: 'width 0.6s ease' }} />
                         </div>
-                        <span style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 600 }}>{fundPct}%</span>
+                        <span style={{ fontSize: 11.5, color: 'var(--fg-muted)', fontWeight: 700 }}>{fundPct}%</span>
                       </div>
                     </td>
                     <td style={{ color: 'var(--fg-muted)', fontSize: 13 }}>{inv.due_date}</td>
@@ -228,13 +280,13 @@ export default function InvoicesPage() {
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
                         {inv.status === 'Verified' && !inv.pool && (
-                          <Link to={`/exporter/invoices/${inv.id}`}
-                            style={{ background: 'rgba(124,92,252,.08)', color: 'var(--color-accent-fg)', border: '1px solid rgba(124,92,252,.2)', borderRadius: 8, padding: '4px 10px', textDecoration: 'none', fontSize: 12, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Link to={`/exporter/invoices/${inv.id}`} className="inv-pool-btn">
                             <TrendingUp size={12} /> Pool
                           </Link>
                         )}
                         <Link to={`/exporter/invoices/${inv.id}`}
-                          style={{ color: 'var(--color-accent-fg)', textDecoration: 'none', fontWeight: 600, fontSize: 12.5, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          className="inv-action-link"
+                          style={{ color: 'var(--color-accent-fg)', textDecoration: 'none', fontWeight: 600, fontSize: 12.5 }}>
                           View <ChevronRight size={13} />
                         </Link>
                       </div>
@@ -255,13 +307,15 @@ export default function InvoicesPage() {
                 const p = i + 1;
                 const isActive = p === page;
                 return (
-                  <button key={p} onClick={() => handlePage(p)} style={{
-                    width: 32, height: 32, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
-                    border: isActive ? '1px solid var(--color-accent-strong)' : '1px solid var(--border)',
-                    background: isActive ? 'var(--color-accent)' : 'transparent',
-                    color: isActive ? 'var(--color-accent-fg)' : 'var(--fg-muted)',
-                    fontWeight: isActive ? 700 : 400,
-                  }}>{p}</button>
+                  <button key={p} onClick={() => handlePage(p)}
+                    className={`inv-pg-btn${isActive ? ' inv-pg-active' : ''}`}
+                    style={{
+                      width: 32, height: 32, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
+                      border: isActive ? '1.5px solid var(--color-accent-strong)' : '1px solid var(--border)',
+                      background: isActive ? 'var(--color-accent)' : 'transparent',
+                      color: isActive ? 'var(--color-accent-fg)' : 'var(--fg-muted)',
+                      fontWeight: isActive ? 700 : 400,
+                    }}>{p}</button>
                 );
               })}
             </div>

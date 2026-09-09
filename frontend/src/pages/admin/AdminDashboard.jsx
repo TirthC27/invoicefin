@@ -19,8 +19,8 @@ const STAGE_COLORS = {
   DEFAULT: '#d4d4d4',
   LEGAL_NOTICE_SENT: '#93c5fd',
   NEGOTIATION: '#fbbf24',
-  SETTLEMENT: '#86efac',
-  RECOVERED: '#4ade80',
+  SETTLEMENT: '#555555',
+  RECOVERED: '#111111',
   CLOSED: '#a3a3a3',
 };
 

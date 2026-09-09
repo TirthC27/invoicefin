@@ -9,12 +9,12 @@
 import { useState, useEffect, useRef } from 'react';
 
 export const STATUS_COLOR = {
-  Draft:     '#6B7280',
-  Verified:  '#3B82F6',
-  Funding:   '#8B5CF6',
-  Funded:    '#EC4899',
-  Active:    '#22C55E',
-  Completed: '#14B8A6',
+  Draft:     '#9a9a96',
+  Verified:  '#e2e4e2',
+  Funding:   '#ffffff',
+  Funded:    '#d4d4d4',
+  Active:    '#ffffff',
+  Completed: '#a0a0a0',
 };
 
 /**

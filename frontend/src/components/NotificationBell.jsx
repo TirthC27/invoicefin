@@ -24,7 +24,7 @@ function formatNotificationTime(value) {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function NotificationBell({ buttonClassName = '', buttonStyle = {}, accent = '#7C5CFC' }) {
+export default function NotificationBell({ buttonClassName = '', buttonStyle = {}, accent = '#FFFFFF' }) {
   const navigate = useNavigate();
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
@@ -117,15 +117,20 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           height: 18px;
           padding: 0 5px;
           border-radius: 999px;
-          background: #EF4444;
-          color: #fff;
-          border: 2px solid var(--bg-base);
+          background: #ffffff;
+          color: #0e0f0e;
+          border: 2px solid #1c1e1c;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 10px;
-          font-weight: 700;
+          font-weight: 800;
           line-height: 1;
+          animation: notifPulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes notifPulse {
+          0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+          50% { transform: scale(1.08); box-shadow: 0 0 0 5px rgba(255, 255, 255, 0); }
         }
         .notif-menu {
           position: absolute;
@@ -134,10 +139,10 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           width: min(360px, calc(100vw - 32px));
           max-height: 430px;
           overflow: hidden;
-          border: 1px solid var(--border);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           border-radius: var(--radius-lg);
-          background: var(--bg-card);
-          box-shadow: var(--shadow-lg);
+          background: #1c1e1c;
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.65);
           z-index: 200;
         }
         .notif-header {
@@ -146,26 +151,26 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           justify-content: space-between;
           gap: 12px;
           padding: 14px 14px 12px;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
-        .notif-title { color: var(--fg-primary); font-size: 14px; font-weight: 700; }
+        .notif-title { color: #ffffff; font-size: 14px; font-weight: 700; }
         .notif-mark {
           width: 30px;
           height: 30px;
           border-radius: 8px;
-          border: 1px solid var(--border);
+          border: 1px solid rgba(255, 255, 255, 0.1);
           background: transparent;
-          color: var(--fg-muted);
+          color: rgba(255, 255, 255, 0.6);
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
         }
-        .notif-mark:disabled { opacity: 0.45; cursor: default; }
+        .notif-mark:disabled { opacity: 0.35; cursor: default; }
         .notif-mark:not(:disabled):hover {
-          border-color: ${accent};
-          color: ${accent};
-          background: rgba(255,255,255,0.04);
+          border-color: #ffffff;
+          color: #ffffff;
+          background: rgba(255,255,255,0.08);
         }
         .notif-list { max-height: 360px; overflow-y: auto; }
         .notif-item {
@@ -175,20 +180,20 @@ export default function NotificationBell({ buttonClassName = '', buttonStyle = {
           gap: 10px;
           padding: 13px 14px;
           border: 0;
-          border-bottom: 1px solid var(--border);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
           background: transparent;
-          color: var(--fg-primary);
+          color: #ffffff;
           text-align: left;
           font-family: inherit;
           cursor: pointer;
         }
-        .notif-item:hover { background: var(--bg-muted); }
+        .notif-item:hover { background: rgba(255, 255, 255, 0.04); }
         .notif-dot {
           width: 8px;
           height: 8px;
           margin-top: 5px;
           border-radius: 999px;
-          background: ${accent};
+          background: #ffffff;
           opacity: 0;
         }
         .notif-dot.unread { opacity: 1; }

@@ -217,13 +217,13 @@ export function ProtectedRoute({ children, allowedRoles }) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        minHeight: '100vh', background: 'var(--bg-base, #f5f4f0)', color: 'var(--fg-muted, #888)',
+        minHeight: '100vh', background: '#fafafa', color: 'rgba(0,0,0,0.55)',
         fontFamily: 'Inter, sans-serif',
       }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{
-            width: 40, height: 40, border: '3px solid var(--border, #e2e0da)',
-            borderTopColor: 'var(--color-accent-strong, #5b7a5b)', borderRadius: '50%',
+            width: 40, height: 40, border: '3px solid rgba(0,0,0,0.1)',
+            borderTopColor: '#111111', borderRadius: '50%',
             animation: 'spin 0.8s linear infinite', margin: '0 auto 16px',
           }} />
           <p>Loading...</p>
@@ -248,12 +248,12 @@ export function ProtectedRoute({ children, allowedRoles }) {
       return (
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          minHeight: '100vh', background: 'var(--bg-base, #f5f4f0)', color: 'var(--color-negative, #dc2626)',
+          minHeight: '100vh', background: '#fafafa', color: '#111111',
           fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: 12,
         }}>
           <h1 style={{ fontSize: 24, fontWeight: 700 }}>Access Denied</h1>
-          <p style={{ color: 'var(--fg-muted, #888)' }}>You don't have permission to access this page.</p>
-          <a href="/login" style={{ color: 'var(--color-accent-strong, #5b7a5b)', textDecoration: 'underline' }}>
+          <p style={{ color: 'rgba(0,0,0,0.55)' }}>You don't have permission to access this page.</p>
+          <a href="/login" style={{ color: '#111111', textDecoration: 'underline' }}>
             Return to Login
           </a>
         </div>

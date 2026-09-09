@@ -12,8 +12,8 @@ const STAGE_COLORS = {
   DEFAULT: { bg: '#f1f5f9', color: '#64748b' },
   LEGAL_NOTICE_SENT: { bg: '#dbeafe', color: '#2563eb' },
   NEGOTIATION: { bg: '#fef3c7', color: '#d97706' },
-  SETTLEMENT: { bg: '#d1fae5', color: '#059669' },
-  RECOVERED: { bg: '#dcfce7', color: '#16a34a' },
+  SETTLEMENT: { bg: 'rgba(0,0,0,0.06)', color: '#111111' },
+  RECOVERED: { bg: 'rgba(0,0,0,0.06)', color: '#111111' },
   CLOSED: { bg: '#f1f5f9', color: '#64748b' },
 };
 
@@ -105,8 +105,8 @@ export default function LawFirmDashboard() {
                 <AreaChart data={trendData}>
                   <defs>
                     <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#bbf7d0" stopOpacity={0.6} />
-                      <stop offset="95%" stopColor="#bbf7d0" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#111111" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#111111" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
@@ -120,7 +120,7 @@ export default function LawFirmDashboard() {
                       borderRadius: 8, color: '#fff', fontSize: 12 }}
                     formatter={(v) => [`${Number(v).toFixed(4)} MATIC`, 'Outstanding']}
                   />
-                  <Area type="monotone" dataKey="amount" stroke="#22C55E"
+                  <Area type="monotone" dataKey="amount" stroke="#ffffff"
                     strokeWidth={2} fill="url(#caseGrad)" />
                 </AreaChart>
               </ResponsiveContainer>

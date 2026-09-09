@@ -3,10 +3,10 @@ import { adminApi } from '../../lib/api';
 import { Users } from 'lucide-react';
 
 const ROLE_COLORS = {
-  INVESTOR: { bg: 'rgba(59,130,246,0.08)', color: '#2563eb' },
-  EXPORTER: { bg: 'rgba(245,158,11,0.08)', color: '#d97706' },
-  LAW_FIRM: { bg: 'rgba(124,92,252,0.08)', color: '#7C5CFC' },
-  ADMIN:    { bg: 'rgba(239,68,68,0.08)',  color: '#dc2626' },
+  INVESTOR: { bg: 'rgba(255,255,255,0.08)', color: '#ffffff' },
+  EXPORTER: { bg: 'rgba(255,255,255,0.08)', color: '#e0e0e0' },
+  LAW_FIRM: { bg: 'rgba(255,255,255,0.08)', color: '#cccccc' },
+  ADMIN:    { bg: 'rgba(255,255,255,0.08)', color: '#aaaaaa' },
 };
 
 function RoleBadge({ role }) {
@@ -21,8 +21,8 @@ function RoleBadge({ role }) {
 function StatusBadge({ status }) {
   const isActive = status === 'ACTIVE';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600, background: isActive ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', color: isActive ? '#16a34a' : '#dc2626' }}>
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: isActive ? '#16a34a' : '#dc2626' }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600, background: isActive ? 'rgba(0,0,0,0.06)' : 'rgba(239,68,68,0.08)', color: isActive ? '#111111' : '#dc2626' }}>
+      <span style={{ width: 5, height: 5, borderRadius: '50%', background: isActive ? '#111111' : '#dc2626' }} />
       {status}
     </span>
   );

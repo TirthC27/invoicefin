@@ -56,14 +56,14 @@ export default function InvestorLayout() {
         <AppHeader
           navItems={navItems}
           portalName="Investor Portal"
-          accentColor="#b5d4a2"
+          accentColor="#ffffff"
           rightExtra={
             <button
               className="btn btn-outline btn-sm"
               onClick={wallet?.isConnected ? wallet?.disconnectWallet : wallet?.connectWallet}
               style={{
-                borderColor: wallet?.isConnected ? 'rgba(34,197,94,0.4)' : undefined,
-                color: wallet?.isConnected ? '#3a8f3a' : undefined,
+                borderColor: wallet?.isConnected ? 'rgba(0,0,0,0.2)' : undefined,
+                color: wallet?.isConnected ? '#111111' : undefined,
               }}
             >
               {walletLabel}

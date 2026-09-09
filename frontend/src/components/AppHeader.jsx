@@ -53,98 +53,96 @@ export default function AppHeader({ navItems = [], portalName = 'InvoiceFi', acc
     : {};
 
   return (
-    <header className="app-header">
-      {/* ── Logo ── */}
-      <div className="app-header-logo" onClick={() => navigate('/')}>
-        <div className="app-header-logo-lines">
-          <span />
-          <span />
-          <span />
-        </div>
-        <span>InvoiceFi</span>
-      </div>
-
-      {/* ── Pill Nav ── */}
-      <nav className="app-header-nav">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `app-header-nav-item${isActive ? ' active' : ''}`
-            }
-            style={({ isActive }) => (isActive && accentColor ? activeStyle : {})}
-          >
-            {item.icon && <item.icon size={14} />}
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* ── Right Actions ── */}
-      <div className="app-header-actions">
-        {/* Any extra content injected by portal (e.g. wallet button) */}
-        {rightExtra}
-
-        {/* Notification Bell — styled for light theme */}
-        <div style={{ position: 'relative' }}>
-          <NotificationBell
-            buttonClassName="app-header-icon-btn"
-            accent={accentColor || '#7C5CFC'}
-          />
+    <div className="app-header-wrapper">
+      <header className="app-header">
+        {/* ── Logo ── */}
+        <div className="app-header-logo" onClick={() => navigate('/')}>
+          <div className="app-header-logo-lines">
+            <span />
+            <span />
+            <span />
+          </div>
+          <span>InvoiceFi</span>
         </div>
 
-        {/* User Dropdown */}
-        <div ref={dropdownRef} style={{ position: 'relative' }}>
-          <button
-            className="app-header-user-btn"
-            onClick={() => setDropdownOpen(v => !v)}
-          >
-            <div
-              className="app-header-avatar"
-              style={accentColor ? { background: accentColor, color: '#1a1a18' } : {}}
+        {/* ── Pill Nav ── */}
+        <nav className="app-header-nav">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.end}
+              className={({ isActive }) =>
+                `app-header-nav-item${isActive ? ' active' : ''}`
+              }
             >
-              {initials}
-            </div>
-            <div className="app-header-user-info">
-              <div className="app-header-user-name">
-                {user?.full_name || user?.email?.split('@')[0] || 'User'}
-              </div>
-              <div className="app-header-user-role">{roleLabel}</div>
-            </div>
-            <ChevronDown size={13} style={{ color: 'var(--fg-muted)' }} />
-          </button>
+              {item.icon && <item.icon size={14} />}
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
 
-          {dropdownOpen && (
-            <div className="app-dropdown">
-              <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-primary)' }}>
-                  {user?.full_name || user?.email?.split('@')[0]}
+        {/* ── Right Actions ── */}
+        <div className="app-header-actions">
+          {/* Any extra content injected by portal (e.g. wallet button) */}
+          {rightExtra}
+
+          {/* Notification Bell */}
+          <div style={{ position: 'relative' }}>
+            <NotificationBell
+              buttonClassName="app-header-icon-btn"
+              accent="#ffffff"
+            />
+          </div>
+
+          {/* User Dropdown */}
+          <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <button
+              className="app-header-user-btn"
+              onClick={() => setDropdownOpen(v => !v)}
+            >
+              <div className="app-header-avatar">
+                {initials}
+              </div>
+              <div className="app-header-user-info">
+                <div className="app-header-user-name">
+                  {user?.full_name || user?.email?.split('@')[0] || 'User'}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
-                  {user?.email}
+                <div className="app-header-user-role">{roleLabel}</div>
+              </div>
+              <ChevronDown size={13} style={{ color: 'var(--fg-muted)' }} />
+            </button>
+
+            {dropdownOpen && (
+              <div className="app-dropdown">
+                <div style={{ padding: '10px 14px 8px', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-primary)' }}>
+                    {user?.full_name || user?.email?.split('@')[0]}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 2 }}>
+                    {user?.email}
+                  </div>
+                </div>
+                <div style={{ padding: '4px' }}>
+                  <button className="app-dropdown-item">
+                    <User size={14} />
+                    Profile
+                  </button>
+                  <button className="app-dropdown-item">
+                    <Settings size={14} />
+                    Settings
+                  </button>
+                  <div className="app-dropdown-divider" />
+                  <button className="app-dropdown-item danger" onClick={handleSignOut}>
+                    <LogOut size={14} />
+                    Sign Out
+                  </button>
                 </div>
               </div>
-              <div style={{ padding: '4px' }}>
-                <button className="app-dropdown-item">
-                  <User size={14} />
-                  Profile
-                </button>
-                <button className="app-dropdown-item">
-                  <Settings size={14} />
-                  Settings
-                </button>
-                <div className="app-dropdown-divider" />
-                <button className="app-dropdown-item danger" onClick={handleSignOut}>
-                  <LogOut size={14} />
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 }

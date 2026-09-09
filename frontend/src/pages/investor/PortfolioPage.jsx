@@ -9,7 +9,7 @@ const POLL_INTERVAL = 10000;
 const STATUS_STYLES = {
   active:    { bg: 'rgba(59,130,246,0.08)', color: '#2563eb', label: 'Active' },
   confirmed: { bg: 'rgba(59,130,246,0.08)', color: '#2563eb', label: 'Confirmed' },
-  completed: { bg: 'rgba(34,197,94,0.08)',  color: '#16a34a', label: 'Completed' },
+  completed: { bg: 'rgba(0,0,0,0.06)',  color: '#111111', label: 'Completed' },
   overdue:   { bg: 'rgba(245,158,11,0.08)', color: '#d97706', label: 'Overdue' },
   defaulted: { bg: 'rgba(239,68,68,0.08)',  color: '#dc2626', label: 'Defaulted' },
 };
@@ -213,7 +213,7 @@ export default function PortfolioPage() {
             style={{
               position: 'fixed', bottom: 32, right: 32, zIndex: 9999,
               padding: '20px 28px', background: 'var(--bg-card)',
-              border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--radius-lg)',
+              border: '1px solid rgba(0,0,0,0.12)', borderRadius: 'var(--radius-lg)',
               boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: 14,
             }}>
             <CheckCircle2 size={28} color="var(--color-positive)" />

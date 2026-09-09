@@ -3,12 +3,12 @@ import { investorApi } from '../../lib/api';
 import { Shield, Clock, FileText, Scale, CheckCircle2, ChevronDown, ChevronUp } from 'lucide-react';
 
 const STAGE_STYLES = {
-  DEFAULT:           { bg: 'rgba(239,68,68,0.08)',  color: '#dc2626', label: 'Default' },
-  LEGAL_NOTICE_SENT: { bg: 'rgba(245,158,11,0.08)', color: '#d97706', label: 'Legal Notice Sent' },
-  NEGOTIATION:       { bg: 'rgba(59,130,246,0.08)', color: '#2563eb', label: 'Negotiation' },
-  SETTLEMENT:        { bg: 'rgba(124,92,252,0.08)', color: '#7C5CFC', label: 'Settlement' },
-  RECOVERED:         { bg: 'rgba(34,197,94,0.08)',  color: '#16a34a', label: 'Recovered' },
-  CLOSED:            { bg: 'var(--bg-muted)',        color: 'var(--fg-muted)', label: 'Closed' },
+  DEFAULT:           { bg: 'rgba(255,255,255,0.08)', color: '#ffffff', label: 'Default' },
+  LEGAL_NOTICE_SENT: { bg: 'rgba(255,255,255,0.08)', color: '#e0e0e0', label: 'Legal Notice Sent' },
+  NEGOTIATION:       { bg: 'rgba(255,255,255,0.08)', color: '#cccccc', label: 'Negotiation' },
+  SETTLEMENT:        { bg: 'rgba(255,255,255,0.08)', color: '#aaaaaa', label: 'Settlement' },
+  RECOVERED:         { bg: 'rgba(255,255,255,0.08)', color: '#ffffff', label: 'Recovered' },
+  CLOSED:            { bg: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)', label: 'Closed' },
 };
 
 const EVENT_ICONS = {

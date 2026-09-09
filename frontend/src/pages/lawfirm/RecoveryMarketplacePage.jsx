@@ -86,7 +86,7 @@ function BidModal({ caseData, lawFirmName, onClose, onSuccess }) {
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={onClose} className="btn btn-outline" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
-            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', background: 'linear-gradient(135deg, #22C55E, #16A34A)', borderColor: '#16A34A' }}>
+            <button type="submit" disabled={loading} className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', background: '#111111', color: '#ffffff', borderColor: '#111111', fontWeight: 700 }}>
               {loading ? 'Placing Bid...' : 'Place Bid'}
             </button>
           </div>
@@ -97,7 +97,7 @@ function BidModal({ caseData, lawFirmName, onClose, onSuccess }) {
 }
 
 function PriorityBadge({ priority }) {
-  const colors = { HIGH: '#dc2626', CRITICAL: '#991b1b', MEDIUM: '#d97706', LOW: '#16a34a' };
+  const colors = { HIGH: '#e0e0e0', CRITICAL: '#ffffff', MEDIUM: '#cccccc', LOW: '#aaaaaa' };
   const color = colors[priority] || '#6b7280';
   return <span style={{ padding: '3px 10px', borderRadius: 50, fontSize: 11, fontWeight: 600, background: `${color}15`, color, border: `1px solid ${color}30` }}>{priority}</span>;
 }
@@ -194,16 +194,16 @@ export default function RecoveryMarketplacePage() {
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--fg-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Live Bids (Highest → Lowest)</div>
                     {c.bids.map((bid, i) => (
-                      <div key={bid.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: i === 0 ? 'rgba(34,197,94,0.06)' : 'var(--bg-muted)', border: `1px solid ${i === 0 ? 'rgba(34,197,94,0.2)' : 'var(--border)'}`, marginBottom: 8 }}>
+                      <div key={bid.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 'var(--radius-md)', background: i === 0 ? 'rgba(0,0,0,0.04)' : 'var(--bg-muted)', border: `1px solid ${i === 0 ? 'rgba(0,0,0,0.12)' : 'var(--border)'}`, marginBottom: 8 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          {i === 0 && <Trophy size={13} color="var(--color-positive)" />}
+                          {i === 0 && <Trophy size={13} color="#111111" />}
                           {i > 0 && <span style={{ fontSize: 12, color: 'var(--fg-muted)', width: 20, textAlign: 'center' }}>#{i + 1}</span>}
                           <div>
                             <div style={{ fontSize: 14, fontWeight: 600 }}>{bid.law_firm_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{bid.law_firm_country}</div>
                           </div>
                         </div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: i === 0 ? 'var(--color-positive)' : 'var(--fg-primary)' }}>{Number(bid.bid_amount).toFixed(4)} MATIC</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: i === 0 ? '#111111' : 'var(--fg-primary)' }}>{Number(bid.bid_amount).toFixed(4)} MATIC</div>
                       </div>
                     ))}
                   </div>
@@ -211,7 +211,7 @@ export default function RecoveryMarketplacePage() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button className="btn btn-primary" disabled={c.bid_deadline_passed} onClick={() => setSelectedCase(c)}
-                    style={{ background: 'linear-gradient(135deg, #22C55E, #16A34A)', borderColor: '#16A34A' }}>
+                    style={{ background: '#111111', color: '#ffffff', borderColor: '#111111', fontWeight: 700 }}>
                     {c.bid_deadline_passed ? 'Auction Closed' : c.bids.some(b => b.law_firm_name === lawFirmName) ? 'Update My Bid' : 'Place Bid'}
                   </button>
                 </div>
@@ -224,7 +224,7 @@ export default function RecoveryMarketplacePage() {
       {selectedCase && <BidModal caseData={selectedCase} lawFirmName={lawFirmName} onClose={() => setSelectedCase(null)} onSuccess={handleBidSuccess} />}
 
       {toast && (
-        <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 9999, padding: '16px 24px', background: 'var(--bg-card)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', fontSize: 14, fontWeight: 600, color: 'var(--color-positive)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 9999, padding: '16px 24px', background: 'var(--bg-card)', border: '1px solid rgba(0,0,0,0.12)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', fontSize: 14, fontWeight: 600, color: '#111111', display: 'flex', alignItems: 'center', gap: 10 }}>
           <Scale size={16} /> {toast.message}
         </div>
       )}

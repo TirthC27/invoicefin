@@ -22,12 +22,12 @@ import StatusBadge from './StatusBadge';
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const ACTION_COLOR_MAP = {
-  uploaded: '#7C5CFC',
-  verified: '#3B82F6',
-  pool_created: '#8B5CF6',
-  funded: '#22C55E',
-  matured: '#14B8A6',
-  status_changed: '#A0A0A8',
+  uploaded: '#ffffff',
+  verified: '#e0e0e0',
+  pool_created: '#cccccc',
+  funded: '#aaaaaa',
+  matured: '#888888',
+  status_changed: '#666666',
 };
 
 function DonutChart({ data }) {
@@ -251,12 +251,12 @@ export default function ExporterDashboard() {
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 14, marginBottom: 24 }}>
-            <MetricCard label="Total Invoices" value={metrics.total} icon={<FileText size={16} color="#7C5CFC" />} color="#7C5CFC" />
-            <MetricCard label="Active Invoices" value={metrics.activeCount} icon={<Clock size={16} color="#22C55E" />} color="#22C55E" />
-            <MetricCard label="Funded Invoices" value={metrics.fundedCount} icon={<CheckCircle2 size={16} color="#EC4899" />} color="#EC4899" />
-            <MetricCard label="Completed" value={metrics.completedCount} icon={<CheckCircle2 size={16} color="#14B8A6" />} color="#14B8A6" />
-            <MetricCard label="Total Amount" value={`$${(metrics.totalAmount / 1000).toFixed(0)}k`} icon={<DollarSign size={16} color="#F59E0B" />} color="#F59E0B" sub="All invoices" />
-            <MetricCard label="Pending Amount" value={`$${(metrics.pendingAmount / 1000).toFixed(0)}k`} icon={<TrendingUp size={16} color="#8B5CF6" />} color="#8B5CF6" sub="Unfunded" />
+            <MetricCard label="Total Invoices" value={metrics.total} icon={<FileText size={16} color="#ffffff" />} color="#ffffff" />
+            <MetricCard label="Active Invoices" value={metrics.activeCount} icon={<Clock size={16} color="#ffffff" />} color="#ffffff" />
+            <MetricCard label="Funded Invoices" value={metrics.fundedCount} icon={<CheckCircle2 size={16} color="#ffffff" />} color="#ffffff" />
+            <MetricCard label="Completed" value={metrics.completedCount} icon={<CheckCircle2 size={16} color="#ffffff" />} color="#ffffff" />
+            <MetricCard label="Total Amount" value={`$${(metrics.totalAmount / 1000).toFixed(0)}k`} icon={<DollarSign size={16} color="#ffffff" />} color="#ffffff" sub="All invoices" />
+            <MetricCard label="Pending Amount" value={`$${(metrics.pendingAmount / 1000).toFixed(0)}k`} icon={<TrendingUp size={16} color="#ffffff" />} color="#ffffff" sub="Unfunded" />
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, marginBottom: 24 }}>

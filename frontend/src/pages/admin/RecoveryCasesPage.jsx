@@ -3,15 +3,15 @@ import { adminApi } from '../../lib/api';
 import { Scale, X } from 'lucide-react';
 
 const STAGE_COLORS = {
-  DEFAULT:           { bg: 'rgba(156,163,175,0.08)', color: '#6b7280' },
-  LEGAL_NOTICE_SENT: { bg: 'rgba(245,158,11,0.08)',  color: '#d97706' },
-  NEGOTIATION:       { bg: 'rgba(59,130,246,0.08)',  color: '#2563eb' },
-  SETTLEMENT:        { bg: 'rgba(124,92,252,0.08)',  color: '#7C5CFC' },
-  RECOVERED:         { bg: 'rgba(34,197,94,0.08)',   color: '#16a34a' },
-  CLOSED:            { bg: 'var(--bg-muted)',         color: 'var(--fg-muted)' },
+  DEFAULT:           { bg: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)' },
+  LEGAL_NOTICE_SENT: { bg: 'rgba(255,255,255,0.08)', color: '#e0e0e0' },
+  NEGOTIATION:       { bg: 'rgba(255,255,255,0.08)', color: '#cccccc' },
+  SETTLEMENT:        { bg: 'rgba(255,255,255,0.08)', color: '#aaaaaa' },
+  RECOVERED:         { bg: 'rgba(255,255,255,0.08)', color: '#ffffff' },
+  CLOSED:            { bg: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.4)' },
 };
 
-const PRIORITY_COLORS = { LOW: '#9CA3AF', MEDIUM: '#d97706', HIGH: '#dc2626', CRITICAL: '#991b1b' };
+const PRIORITY_COLORS = { LOW: '#aaaaaa', MEDIUM: '#cccccc', HIGH: '#e0e0e0', CRITICAL: '#ffffff' };
 
 function StageBadge({ stage }) {
   const s = STAGE_COLORS[stage] || STAGE_COLORS.DEFAULT;

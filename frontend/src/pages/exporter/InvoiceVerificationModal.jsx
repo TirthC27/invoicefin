@@ -71,17 +71,17 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
     }}>
       <div style={{
         width: '100%', maxWidth: 460,
-        background: 'var(--bg-card, #fff)',
-        border: '1px solid var(--border, #e2e0da)',
+        background: '#ffffff',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
         borderRadius: 24, padding: '36px 32px',
         boxShadow: '0 30px 60px rgba(0,0,0,.15)',
-        textAlign: 'center', color: 'var(--fg-primary, #1a1a1f)', position: 'relative', overflow: 'hidden',
+        textAlign: 'center', color: '#111111', position: 'relative', overflow: 'hidden',
       }}>
         {/* Glow blob */}
         <div style={{
           position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
           width: 220, height: 220, borderRadius: '50%',
-          background: done ? 'rgba(34,197,94,.18)' : 'rgba(124,92,252,.18)',
+          background: done ? 'rgba(0,0,0,.04)' : 'rgba(0,0,0,.04)',
           filter: 'blur(55px)', pointerEvents: 'none', transition: 'background .5s',
         }} />
 
@@ -89,49 +89,49 @@ export default function InvoiceVerificationModal({ isOpen, invoiceData, blockcha
         <div style={{
           width: 72, height: 72, borderRadius: 20, margin: '0 auto 22px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: done ? 'rgba(34,197,94,.12)' : 'rgba(124,92,252,.12)',
-          border: done ? '1px solid rgba(34,197,94,.3)' : '1px solid rgba(124,92,252,.3)',
+          background: 'rgba(0,0,0,.04)',
+          border: '1px solid rgba(0,0,0,.08)',
           transition: 'all .4s ease',
         }}>
           {done
-            ? <CheckCircle2 size={36} color="#22C55E" />
-            : <Cpu size={36} color="#7C5CFC" style={{ animation: 'vcSpin 3s linear infinite' }} />
+            ? <CheckCircle2 size={36} color="#111111" />
+            : <Cpu size={36} color="#111111" style={{ animation: 'vcSpin 3s linear infinite' }} />
           }
         </div>
 
-        <h3 style={{ fontSize: 21, fontWeight: 700, marginBottom: 6, letterSpacing: '-.3px' }}>
+        <h3 style={{ fontSize: 21, fontWeight: 700, marginBottom: 6, letterSpacing: '-.3px', color: '#111111' }}>
           {done ? 'Verification Complete!' : 'Analyzing Invoice...'}
         </h3>
-        <p style={{ fontSize: 13, color: 'var(--fg-muted, #888)', marginBottom: 26, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13, color: 'rgba(0,0,0,0.55)', marginBottom: 26, lineHeight: 1.5 }}>
           Server-side field validation &amp; reference hash generation in progress.
         </p>
 
         {/* Progress bar */}
         <div style={{ marginBottom: 22, textAlign: 'left' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, fontSize: 13, fontWeight: 600 }}>
-            <span style={{ color: done ? '#22C55E' : '#9E80FF', display: 'flex', alignItems: 'center', gap: 6, transition: 'color .3s' }}>
+            <span style={{ color: '#111111', display: 'flex', alignItems: 'center', gap: 6, transition: 'color .3s' }}>
               {!done && <Loader2 size={14} style={{ animation: 'vcSpin 1s linear infinite' }} />}
               {STEPS[stepIndex]}
             </span>
-            <span style={{ color: '#A0A0A8' }}>{Math.round(progress)}%</span>
+            <span style={{ color: 'rgba(0,0,0,0.55)' }}>{Math.round(progress)}%</span>
           </div>
-          <div style={{ width: '100%', height: 10, borderRadius: 99, background: 'var(--bg-muted, #eee)', border: '1px solid var(--border, #e2e0da)', padding: 2, boxSizing: 'border-box' }}>
+          <div style={{ width: '100%', height: 10, borderRadius: 99, background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', padding: 2, boxSizing: 'border-box' }}>
             <div style={{
               height: '100%', width: `${progress}%`, borderRadius: 99,
-              background: done ? 'linear-gradient(90deg,#22C55E,#16A34A)' : 'linear-gradient(90deg,#7C5CFC,#A78BFA)',
+              background: '#111111',
               transition: 'width .06s linear, background .4s ease',
-              boxShadow: done ? '0 0 10px rgba(34,197,94,.5)' : '0 0 10px rgba(124,92,252,.5)',
+              boxShadow: '0 0 10px rgba(0,0,0,.15)',
             }} />
           </div>
         </div>
 
         {/* Blockchain hash */}
         {blockchainHash && (
-          <div style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, padding: '12px 14px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: '#A0A0A8', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>
-              <ShieldCheck size={13} color="#22C55E" /> Invoice Reference Hash
+          <div style={{ background: 'rgba(0,0,0,.03)', border: '1px solid rgba(0,0,0,.08)', borderRadius: 12, padding: '12px 14px', textAlign: 'left' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color: 'rgba(0,0,0,0.55)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 5 }}>
+              <ShieldCheck size={13} color="#111111" /> Invoice Reference Hash
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#E0E0E8', wordBreak: 'break-all', lineHeight: 1.5, opacity: progress > 60 ? 1 : 0.3, transition: 'opacity .4s' }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#111111', wordBreak: 'break-all', lineHeight: 1.5, opacity: progress > 60 ? 1 : 0.3, transition: 'opacity .4s' }}>
               {blockchainHash}
             </div>
           </div>

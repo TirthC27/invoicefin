@@ -5,8 +5,8 @@ export default function NotFound() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-base, #f5f4f0)',
-      color: 'var(--fg-primary, #1a1a1f)',
+      background: '#fafafa',
+      color: '#111111',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -14,10 +14,10 @@ export default function NotFound() {
       fontFamily: 'Inter, system-ui, sans-serif',
     }}>
       <main style={{ maxWidth: 420, textAlign: 'center' }}>
-        <div style={{ fontSize: 72, fontWeight: 900, letterSpacing: -4, marginBottom: 12, color: 'var(--color-accent-strong, #5b7a5b)', opacity: 0.4 }}>
+        <div style={{ fontSize: 72, fontWeight: 900, letterSpacing: -4, marginBottom: 12, color: '#111111', opacity: 0.15 }}>
           404
         </div>
-        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5 }}>Page not found</h1>
+        <h1 style={{ fontSize: 28, fontWeight: 800, margin: '0 0 12px', letterSpacing: -0.5, color: '#111111' }}>Page not found</h1>
         <p style={{ color: 'var(--fg-muted, #888)', fontSize: 14, lineHeight: 1.6, margin: '0 0 28px' }}>
           The page you opened does not exist in this InvoiceFi workspace.
         </p>

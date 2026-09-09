@@ -12,15 +12,14 @@ import {
 } from 'recharts';
 
 const POLL_INTERVAL = 12000;
-const CHART_COLORS = ['#7C5CFC', '#22C55E', '#F59E0B', '#3B82F6', '#EF4444', '#EC4899'];
+const CHART_COLORS = ['#111111', '#333333', '#555555', '#777777', '#999999', '#bbbbbb'];
 
 const CHART_TOOLTIP_STYLE = {
-  backgroundColor: '#1a1a18',
-  border: 'none',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgba(0,0,0,0.08)',
   borderRadius: 8,
-  color: '#fff',
-  fontSize: 12,
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+  color: '#111111',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
 };
 
 export default function InvestorDashboard() {
@@ -148,7 +147,7 @@ export default function InvestorDashboard() {
                   <YAxis axisLine={false} tickLine={false}
                     tick={{ fontSize: 11, fill: 'var(--fg-muted)' }} width={50} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                  <Line type="monotone" dataKey="value" stroke="#7C5CFC"
+                  <Line type="monotone" dataKey="value" stroke="#ffffff"
                     strokeWidth={2.5} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -225,7 +224,7 @@ export default function InvestorDashboard() {
                   <YAxis axisLine={false} tickLine={false} width={50}
                     tick={{ fontSize: 11, fill: 'var(--fg-muted)' }} />
                   <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
-                  <Bar dataKey="returns" fill="#b5d4a2" radius={[4, 4, 0, 0]} maxBarSize={32} />
+                  <Bar dataKey="returns" fill="#111111" radius={[4, 4, 0, 0]} maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (

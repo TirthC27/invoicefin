@@ -29,9 +29,9 @@ function CopyHash({ hash }) {
   };
   return (
     <button onClick={copy} style={{
-      background: copied ? 'rgba(34,197,94,.1)' : 'var(--border, #e2e0da)',
-      border: `1px solid ${copied ? 'rgba(34,197,94,.3)' : 'rgba(255,255,255,.1)'}`,
-      borderRadius: 8, color: copied ? '#22C55E' : '#A0A0A8',
+      background: copied ? 'rgba(0,0,0,.06)' : 'var(--border, #e2e0da)',
+      border: `1px solid ${copied ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.1)'}`,
+      borderRadius: 8, color: copied ? '#111111' : '#A0A0A8',
       padding: '5px 10px', cursor: 'pointer', fontSize: 12,
       display: 'flex', alignItems: 'center', gap: 5, transition: 'all .2s',
       fontFamily: "'Inter',sans-serif",
@@ -46,26 +46,24 @@ function CountdownBadge({ dueDate, onExpire }) {
   return (
     <div style={{
       display: 'inline-flex', alignItems: 'center', gap: 8,
-      background: expired ? 'rgba(239,68,68,.1)' : 'rgba(34,197,94,.1)',
-      border: `1px solid ${expired ? 'rgba(239,68,68,.3)' : 'rgba(34,197,94,.3)'}`,
+      background: expired ? 'rgba(239,68,68,.1)' : 'rgba(0,0,0,.06)',
+      border: `1px solid ${expired ? 'rgba(239,68,68,.3)' : 'rgba(0,0,0,.12)'}`,
       borderRadius: 10, padding: '8px 14px',
     }}>
-      <Clock size={14} color={expired ? '#EF4444' : '#22C55E'} />
-      <span style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: expired ? '#EF4444' : '#22C55E' }}>
+      <Clock size={14} color={expired ? '#EF4444' : '#111111'} />
+      <span style={{ fontFamily: 'monospace', fontSize: 15, fontWeight: 700, color: expired ? '#EF4444' : '#111111' }}>
         {expired ? 'MATURED' : display}
       </span>
       {!expired && <span style={{ fontSize: 11, color: '#A0A0A8' }}>remaining</span>}
     </div>
   );
-}
-
-function InfoCard({ icon, label, value, valueColor, bold, mono }) {
+}function InfoCard({ icon, label, value, valueColor, bold, mono }) {
   return (
-    <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 14, padding: '16px 18px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#606068', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+    <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 14, padding: '16px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(0,0,0,0.52)', fontSize: 11.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
         {icon} {label}
       </div>
-      <div style={{ fontSize: mono ? 12 : 15, fontWeight: bold ? 800 : 500, color: valueColor || '#E0E0E8', letterSpacing: bold ? '-.3px' : 0, fontFamily: mono ? 'monospace' : 'inherit', wordBreak: mono ? 'break-all' : 'normal' }}>
+      <div style={{ fontSize: mono ? 12 : 15, fontWeight: bold ? 800 : 500, color: valueColor || '#111111', letterSpacing: bold ? '-.3px' : 0, fontFamily: mono ? 'monospace' : 'inherit', wordBreak: mono ? 'break-all' : 'normal' }}>
         {value || '—'}
       </div>
     </div>
@@ -81,12 +79,12 @@ const ACTION_ICON = {
   status_changed: <Activity size={13} />,
 };
 const ACTION_COLOR = {
-  uploaded:     '#7C5CFC',
-  verified:     '#3B82F6',
-  pool_created: '#8B5CF6',
-  funded:       '#22C55E',
-  matured:      '#14B8A6',
-  status_changed: '#A0A0A8',
+  uploaded:     '#111111',
+  verified:     '#111111',
+  pool_created: '#111111',
+  funded:       '#111111',
+  matured:      '#111111',
+  status_changed: '#666666',
 };
 
 export default function InvoiceDetailPage() {
@@ -139,13 +137,13 @@ export default function InvoiceDetailPage() {
     setShowPool(false);
     setToast('Investment Pool created! Now visible to investors.');
     setTimeout(() => setToast(''), 5000);
-    fetchInvoice(); // refresh history
+    fetchInvoice(); 
   };
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
-      <div style={{ textAlign: 'center', color: '#A0A0A8' }}>
-        <div style={{ width: 36, height: 36, border: '3px solid rgba(124,92,252,.2)', borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
+      <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.55)' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: '#111111', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 12px' }} />
         <p style={{ fontSize: 14, margin: 0 }}>Loading invoice…</p>
         <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
@@ -153,7 +151,7 @@ export default function InvoiceDetailPage() {
   );
 
   if (error || !invoice) return (
-    <div style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)', borderRadius: 14, padding: '20px 24px', color: '#F87171', display: 'flex', alignItems: 'center', gap: 10 }}>
+    <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,.08)', borderRadius: 14, padding: '20px 24px', color: '#111111', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
       <AlertCircle size={18} /> {error || 'Invoice not found.'}
     </div>
   );
@@ -161,22 +159,23 @@ export default function InvoiceDetailPage() {
   const hasPool    = !!invoice.pool;
   const isCountable = ['Funded', 'Active'].includes(invoice.status);
   return (
-    <div style={{ color: '#fff', fontFamily: "'Inter',sans-serif" }}>
-      {/* Toast */}
+    <div style={{ color: '#111111', fontFamily: "'Inter',sans-serif", paddingBottom: 60 }}>
       {toast && (
-        <div style={{ background: 'rgba(34,197,94,.12)', border: '1px solid rgba(34,197,94,.3)', borderRadius: 12, padding: '10px 16px', marginBottom: 20, color: '#22C55E', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <CheckCircle2 size={15} /> {toast}
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 12, padding: '12px 20px', color: '#111111', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 24px rgba(0,0,0,.10)' }}>
+          <CheckCircle2 size={16} /> {toast}
         </div>
       )}
 
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
+          <Link to="/exporter/invoices" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(0,0,0,0.55)', textDecoration: 'none', fontSize: 13, fontWeight: 500, marginBottom: 12 }}>
+            <ArrowLeft size={14} /> Back to Invoices
+          </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-.5px' }}>{invoice.invoice_number}</h1>
+            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, letterSpacing: '-.5px', color: '#111111' }}>{invoice.invoice_number}</h1>
             <StatusBadge status={invoice.status} />
           </div>
-          <p style={{ margin: 0, fontSize: 14, color: '#A0A0A8' }}>
+          <p style={{ margin: 0, fontSize: 14, color: 'rgba(0,0,0,0.55)' }}>
             {invoice.buyer_company} · Uploaded {timeAgo(invoice.created_at)}
           </p>
         </div>
@@ -184,41 +183,16 @@ export default function InvoiceDetailPage() {
           {isCountable && (
             <CountdownBadge dueDate={invoice.due_date} onExpire={handleExpire} />
           )}
-          {['Draft', 'Verified'].includes(invoice.status) && !hasPool && (
-            <button
-              onClick={async () => {
-                if (window.confirm('Are you sure you want to close this invoice? It will no longer be available for pooling.')) {
-                  try {
-                    const updated = await exporterApi.updateStatus(invoice.id, 'Closed');
-                    setInvoice(updated);
-                    setToast('Invoice has been closed.');
-                    setTimeout(() => setToast(''), 5000);
-                  } catch (err) {
-                    alert(err?.error || 'Failed to close invoice.');
-                  }
-                }
-              }}
-              style={{
-                height: 42, padding: '0 20px',
-                background: 'rgba(239,68,68,.1)',
-                color: '#EF4444', border: '1px solid rgba(239,68,68,.3)', borderRadius: 12, fontSize: 14,
-                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                fontFamily: 'inherit', transition: 'all .2s'
-              }}
-            >
-              Close Invoice
-            </button>
-          )}
           {invoice.status === 'Verified' && !hasPool && (
             <button
               id="create-pool-btn"
               onClick={() => setShowPool(true)}
               style={{
                 height: 42, padding: '0 20px',
-                background: 'linear-gradient(135deg,#7C5CFC,#6B48F5)',
-                color: '#fff', border: 'none', borderRadius: 12, fontSize: 14,
-                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
-                boxShadow: '0 4px 14px rgba(124,92,252,.35)', fontFamily: 'inherit',
+                background: '#111111',
+                color: '#ffffff', border: 'none', borderRadius: 12, fontSize: 14,
+                fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8,
+                boxShadow: '0 4px 14px rgba(0,0,0,.15)', fontFamily: 'inherit',
               }}
             >
               <TrendingUp size={16} /> Create Investment Pool
@@ -227,22 +201,21 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      {/* Blockchain hash banner */}
       {invoice.blockchain_hash && (
         <div style={{
-          background: 'linear-gradient(135deg,rgba(34,197,94,.06),rgba(124,92,252,.06))',
-          border: '1px solid rgba(34,197,94,.2)', borderRadius: 16,
-          padding: '16px 20px', marginBottom: 24,
+          background: '#ffffff',
+          border: '1px solid rgba(0,0,0,.08)', borderRadius: 16,
+          padding: '16px 20px', marginBottom: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
           display: 'flex', alignItems: 'flex-start', gap: 14,
         }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(34,197,94,.12)', border: '1px solid rgba(34,197,94,.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <ShieldCheck size={20} color="#22C55E" />
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(0,0,0,.04)', border: '1px solid rgba(0,0,0,.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <ShieldCheck size={20} color="#111111" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#22C55E', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#111111', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
               <CheckCircle2 size={13} /> Verified on Polygon Amoy (simulated)
             </div>
-            <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: '#A0A0A8', wordBreak: 'break-all', lineHeight: 1.6 }}>
+            <div style={{ fontFamily: 'monospace', fontSize: 11.5, color: 'rgba(0,0,0,0.55)', wordBreak: 'break-all', lineHeight: 1.6 }}>
               {invoice.blockchain_hash}
             </div>
           </div>
@@ -250,46 +223,43 @@ export default function InvoiceDetailPage() {
         </div>
       )}
 
-      {/* Info grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14, marginBottom: 20 }}>
         <InfoCard icon={<Hash size={13} />}     label="Invoice #"     value={invoice.invoice_number} />
-        <InfoCard icon={<DollarSign size={13} />} label="Amount"     value={fmtAmount(invoice.amount, invoice.currency)} valueColor="#22C55E" bold />
+        <InfoCard icon={<DollarSign size={13} />} label="Amount"     value={fmtAmount(invoice.amount, invoice.currency)} valueColor="#111111" bold />
         <InfoCard icon={<Building2 size={13} />} label="Buyer"       value={`${invoice.buyer_name} — ${invoice.buyer_company}`} />
         <InfoCard icon={<Globe size={13} />}     label="Country"     value={invoice.country} />
         <InfoCard icon={<Calendar size={13} />}  label="Issue Date"  value={invoice.issue_date} />
         <InfoCard icon={<Calendar size={13} />}  label="Due Date"    value={invoice.due_date} />
         {invoice.po_number && <InfoCard icon={<FileText size={13} />} label="PO Number" value={invoice.po_number} />}
-        <InfoCard icon={<Activity size={13} />}  label="Funded"      value={fmtAmount(invoice.funded_amount || 0, invoice.currency)} valueColor={invoice.funded_amount > 0 ? '#22C55E' : '#A0A0A8'} />
+        <InfoCard icon={<Activity size={13} />}  label="Funded"      value={fmtAmount(invoice.funded_amount || 0, invoice.currency)} valueColor={invoice.funded_amount > 0 ? '#111111' : 'rgba(0,0,0,0.55)'} />
       </div>
 
-      {/* Funding progress */}
       {['Funding','Funded','Active','Completed'].includes(invoice.status) && (
-        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: '18px 20px', marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span style={{ fontSize: 12.5, fontWeight: 600, color: '#A0A0A8', textTransform: 'uppercase', letterSpacing: '.5px' }}>Funding Progress</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#7C5CFC' }}>{invoice.funding_percent ?? 0}%</span>
+            <span style={{ fontSize: 12.5, fontWeight: 600, color: 'rgba(0,0,0,0.52)', textTransform: 'uppercase', letterSpacing: '.5px' }}>Funding Progress</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#111111' }}>{invoice.funding_percent ?? 0}%</span>
           </div>
-          <div style={{ height: 12, borderRadius: 99, background: 'var(--border, #e2e0da)', border: '1px solid var(--border, #e2e0da)', padding: 2, boxSizing: 'border-box' }}>
+          <div style={{ height: 12, borderRadius: 99, background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', padding: 2, boxSizing: 'border-box' }}>
             <div style={{
               height: '100%', width: `${Math.min(100, invoice.funding_percent ?? 0)}%`,
-              borderRadius: 99, background: 'linear-gradient(90deg,#7C5CFC,#22C55E)',
-              boxShadow: '0 0 10px rgba(124,92,252,.3)', transition: 'width .6s ease',
+              borderRadius: 99, background: '#111111',
+              boxShadow: '0 0 10px rgba(0,0,0,.1)', transition: 'width .6s ease',
             }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: '#606068' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, fontSize: 12, color: 'rgba(0,0,0,0.52)' }}>
             <span>Raised: {fmtAmount(invoice.funded_amount || 0, invoice.currency)}</span>
             <span>Target: {fmtAmount(invoice.amount, invoice.currency)}</span>
           </div>
         </div>
       )}
 
-      {/* Pool details / Create Pool CTA */}
       {hasPool ? (
-        <div style={{ background: 'linear-gradient(135deg,rgba(124,92,252,.07),rgba(139,92,246,.05))', border: '1px solid rgba(124,92,252,.2)', borderRadius: 16, padding: '20px 22px', marginBottom: 20 }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,.08)', borderRadius: 16, padding: '20px 22px', marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-            <TrendingUp size={16} color="#7C5CFC" />
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Investment Pool</h3>
-            <span style={{ fontSize: 11, background: 'rgba(34,197,94,.12)', color: '#22C55E', border: '1px solid rgba(34,197,94,.25)', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+            <TrendingUp size={16} color="#111111" />
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111111' }}>Investment Pool</h3>
+            <span style={{ fontSize: 11, background: 'rgba(0,0,0,.06)', color: '#111111', border: '1px solid rgba(0,0,0,.12)', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
               Visible to Investors
             </span>
           </div>
@@ -303,55 +273,55 @@ export default function InvoiceDetailPage() {
               { label: 'Pool Status',      value: invoice.pool.status },
             ].map(({ label, value }) => (
               <div key={label}>
-                <div style={{ fontSize: 11, color: '#606068', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#E0E0E8' }}>{value}</div>
+                <div style={{ fontSize: 11, color: 'rgba(0,0,0,0.52)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.4px', marginBottom: 4 }}>{label}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: '#111111' }}>{value}</div>
               </div>
             ))}
           </div>
         </div>
       ) : invoice.status === 'Verified' ? (
-        <div style={{ background: 'rgba(124,92,252,.05)', border: '1px dashed rgba(124,92,252,.25)', borderRadius: 16, padding: '22px 20px', marginBottom: 20, textAlign: 'center' }}>
-          <TrendingUp size={28} color="#7C5CFC" style={{ marginBottom: 10 }} />
-          <p style={{ margin: '0 0 14px', fontSize: 14, color: '#A0A0A8' }}>
+        <div style={{ background: '#ffffff', border: '1px dashed rgba(0,0,0,.16)', borderRadius: 16, padding: '22px 20px', marginBottom: 20, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <TrendingUp size={28} color="#111111" style={{ marginBottom: 10 }} />
+          <p style={{ margin: '0 0 14px', fontSize: 14, color: 'rgba(0,0,0,0.55)' }}>
             This invoice is verified. Create an investment pool to open it to investors.
           </p>
           <button onClick={() => setShowPool(true)} style={{
             height: 40, padding: '0 20px',
-            background: 'linear-gradient(135deg,#7C5CFC,#6B48F5)',
-            color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 600,
+            background: '#111111',
+            color: '#ffffff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700,
             cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'inherit',
+            boxShadow: '0 4px 14px rgba(0,0,0,.15)',
           }}>
             <Plus size={16} /> Create Investment Pool
           </button>
         </div>
       ) : null}
 
-      {/* Description */}
       {invoice.description && (
-        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px', marginBottom: 20 }}>
-          <div style={{ fontSize: 11.5, fontWeight: 600, color: '#606068', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Description</div>
-          <p style={{ margin: 0, color: '#D0D0D8', fontSize: 14, lineHeight: 1.7 }}>{invoice.description}</p>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: '18px 20px', marginBottom: 20, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: 'rgba(0,0,0,0.52)', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>Description</div>
+          <p style={{ margin: 0, color: '#111111', fontSize: 14, lineHeight: 1.7 }}>{invoice.description}</p>
         </div>
       )}
 
       {/* Activity history */}
       {history.length > 0 && (
-        <div style={{ background: 'var(--bg-card, #fff)', border: '1px solid var(--border, #e2e0da)', borderRadius: 16, padding: '18px 20px' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-            <Activity size={15} color="#7C5CFC" />
-            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700 }}>Activity History</h4>
+            <Activity size={15} color="#111111" />
+            <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#111111' }}>Activity History</h4>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {history.map((h) => {
-              const col = ACTION_COLOR[h.action_type] || '#A0A0A8';
+              const col = ACTION_COLOR[h.action_type] || '#666666';
               return (
-                <div key={h.id} style={{ display: 'flex', gap: 12, paddingBottom: 12, borderBottom: '1px solid rgba(255,255,255,.04)' }}>
-                  <div style={{ width: 26, height: 26, borderRadius: 7, background: `${col}22`, color: col, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div key={h.id} style={{ display: 'flex', gap: 12, paddingBottom: 12, borderBottom: '1px solid rgba(0,0,0,.06)' }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 7, background: `rgba(0,0,0,0.05)`, color: col, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     {ACTION_ICON[h.action_type] || <Activity size={12} />}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p style={{ margin: '0 0 3px', fontSize: 13, color: '#D0D0D8', lineHeight: 1.4 }}>{h.description}</p>
-                    <span style={{ fontSize: 11, color: '#505058' }}>{timeAgo(h.timestamp)}</span>
+                    <p style={{ margin: '0 0 3px', fontSize: 13, color: '#111111', lineHeight: 1.4 }}>{h.description}</p>
+                    <span style={{ fontSize: 11, color: 'rgba(0,0,0,0.52)' }}>{timeAgo(h.timestamp)}</span>
                   </div>
                 </div>
               );

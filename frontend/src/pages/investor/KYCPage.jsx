@@ -33,11 +33,11 @@ function StepIndicator({ current, total }) {
         <React.Fragment key={i}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%',
-            background: i < current ? '#7C5CFC' : i === current ? 'rgba(124,92,252,0.2)' : 'rgba(255,255,255,0.06)',
-            border: i === current ? '2px solid #7C5CFC' : '2px solid transparent',
+            background: i < current ? '#111111' : i === current ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.04)',
+            border: i === current ? '2px solid #111111' : '2px solid transparent',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 700,
-            color: i < current ? '#fff' : i === current ? '#7C5CFC' : '#A0A0A8',
+            color: i < current ? '#ffffff' : i === current ? '#111111' : 'rgba(0,0,0,0.4)',
             transition: 'all 0.3s',
           }}>
             {i < current ? '✓' : i + 1}
@@ -45,7 +45,7 @@ function StepIndicator({ current, total }) {
           {i < total - 1 && (
             <div style={{
               flex: 1, height: 2,
-              background: i < current ? '#7C5CFC' : 'rgba(255,255,255,0.08)',
+              background: i < current ? '#111111' : 'rgba(0,0,0,0.08)',
               transition: 'background 0.3s',
             }} />
           )}
@@ -95,31 +95,31 @@ function PendingBanner({ secondsRemaining, onApproved }) {
 
   return (
     <div style={{
-      background: 'rgba(124,92,252,0.06)', border: '1px solid rgba(124,92,252,0.25)',
-      borderRadius: 16, padding: '28px 32px', textAlign: 'center',
+      background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.12)',
+      borderRadius: 16, padding: '28px 32px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
     }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>⏳</div>
-      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
+      <h3 style={{ fontSize: 20, fontWeight: 700, color: '#111111', marginBottom: 8 }}>
         KYC Review in Progress
       </h3>
-      <p style={{ color: '#A0A0A8', fontSize: 14, marginBottom: 20 }}>
+      <p style={{ color: 'rgba(0,0,0,0.55)', fontSize: 14, marginBottom: 20 }}>
         Your application is being processed. Auto-approval in approximately:
       </p>
       <div style={{
         fontSize: 42, fontWeight: 800, fontVariantNumeric: 'tabular-nums',
-        color: '#7C5CFC', letterSpacing: '-1px', marginBottom: 20,
+        color: '#111111', letterSpacing: '-1px', marginBottom: 20,
         fontFamily: 'monospace',
       }}>
         {timeStr}
       </div>
       <div style={{
         display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap',
-        fontSize: 12, color: '#A0A0A8',
+        fontSize: 12, color: 'rgba(0,0,0,0.55)',
       }}>
         {['Identity Verified', 'Business Checked', 'Documents Scanned'].map(s => (
           <span key={s} style={{
-            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
-            color: '#22C55E', padding: '4px 12px', borderRadius: 20, fontSize: 11,
+            background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.12)',
+            color: '#111111', padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600,
           }}>✓ {s}</span>
         ))}
       </div>
@@ -200,7 +200,7 @@ export default function KYCPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 300 }}>
-        <div style={{ width: 32, height: 32, border: '3px solid rgba(124,92,252,0.2)', borderTopColor: '#7C5CFC', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 32, height: 32, border: '3px solid rgba(0,0,0,0.1)', borderTopColor: '#111111', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -217,21 +217,21 @@ export default function KYCPage() {
           to { opacity: 1; transform: translateY(0); }
         }
         .kyc-card { animation: kyc-slide-in 0.4s ease-out both; }
-        .kyc-skip-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #A0A0A8; padding: 10px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .kyc-skip-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-        .kyc-next-btn { background: linear-gradient(135deg, #7C5CFC, #6B48F5); border: none; color: #fff; padding: 10px 28px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-        .kyc-next-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124,92,252,0.3); }
+        .kyc-skip-btn { background: rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.12); color: rgba(0,0,0,0.6); padding: 10px 24px; border-radius: 10px; font-size: 14px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+        .kyc-skip-btn:hover { background: rgba(0,0,0,0.08); color: #111111; }
+        .kyc-next-btn { background: #111111; border: none; color: #ffffff; padding: 10px 28px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; font-family: inherit; boxShadow: 0 4px 14px rgba(0,0,0,0.12); }
+        .kyc-next-btn:hover:not(:disabled) { background: #262626; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
         .kyc-next-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .kyc-field-row { display: flex; align-items: center; gap: 12; padding: 12px 16px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; margin-bottom: 8px; color: #A0A0A8; font-size: 14px; }
-        .kyc-field-check { width: 20px; height: 20px; border-radius: 50%; background: rgba(124,92,252,0.15); border: 1px solid rgba(124,92,252,0.3); display: flex; align-items: center; justify-content: center; font-size: 10px; color: #7C5CFC; flex-shrink: 0; margin-right: 12px; }
+        .kyc-field-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.06); border-radius: 10px; margin-bottom: 8px; color: #111111; font-size: 14px; }
+        .kyc-field-check { width: 20px; height: 20px; border-radius: 50%; background: #111111; border: 1px solid #111111; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #ffffff; flex-shrink: 0; margin-right: 12px; }
       `}</style>
 
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
         <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', marginBottom: 6 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#111111', letterSpacing: '-0.5px', marginBottom: 6 }}>
             Become an Exporter
           </h1>
-          <p style={{ color: '#A0A0A8', fontSize: 14 }}>
+          <p style={{ color: 'rgba(0,0,0,0.55)', fontSize: 14 }}>
             Complete KYC verification to unlock invoice upload and pool creation capabilities — all on the same account.
           </p>
         </div>
@@ -242,10 +242,10 @@ export default function KYCPage() {
         }}>
           {['Upload Invoices', 'Create Investment Pools', 'Manage Repayments'].map(f => (
             <div key={f} style={{
-              background: 'rgba(124,92,252,0.08)', border: '1px solid rgba(124,92,252,0.2)',
-              borderRadius: 8, padding: '6px 14px', fontSize: 12, color: '#A0A0A8',
+              background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)',
+              borderRadius: 8, padding: '6px 14px', fontSize: 12, color: '#111111', fontWeight: 500,
             }}>
-              <span style={{ color: '#7C5CFC', marginRight: 6 }}>→</span>{f}
+              <span style={{ color: '#111111', marginRight: 6 }}>→</span>{f}
             </div>
           ))}
         </div>
@@ -267,11 +267,11 @@ export default function KYCPage() {
           </div>
         ) : isApproved ? (
           <div className="kyc-card" style={{
-            background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+            background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.12)',
             borderRadius: 16, padding: 32, textAlign: 'center',
           }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-            <h3 style={{ color: '#22C55E', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>KYC Approved!</h3>
+            <h3 style={{ color: 'var(--fg)', fontSize: 20, fontWeight: 700, marginBottom: 8 }}>KYC Approved!</h3>
             <p style={{ color: 'var(--fg-muted)', marginBottom: 20 }}>You now have Exporter capabilities. Start uploading invoices.</p>
             <button className="kyc-next-btn" onClick={() => navigate('/investor/exporter/upload')}>
               Upload First Invoice →

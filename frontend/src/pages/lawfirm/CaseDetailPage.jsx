@@ -9,12 +9,12 @@ import {
 
 /* ── Stage Timeline Config ────────────────────────── */
 const STAGES = [
-  { key: 'DEFAULT', label: 'Default', color: '#9CA3AF' },
-  { key: 'LEGAL_NOTICE_SENT', label: 'Legal Notice', color: '#F59E0B' },
-  { key: 'NEGOTIATION', label: 'Negotiation', color: '#3B82F6' },
-  { key: 'SETTLEMENT', label: 'Settlement', color: '#7C5CFC' },
-  { key: 'RECOVERED', label: 'Recovered', color: '#22C55E' },
-  { key: 'CLOSED', label: 'Closed', color: '#6B7280' },
+  { key: 'DEFAULT', label: 'Default', color: 'rgba(255,255,255,0.4)' },
+  { key: 'LEGAL_NOTICE_SENT', label: 'Legal Notice', color: '#e0e0e0' },
+  { key: 'NEGOTIATION', label: 'Negotiation', color: '#cccccc' },
+  { key: 'SETTLEMENT', label: 'Settlement', color: '#aaaaaa' },
+  { key: 'RECOVERED', label: 'Recovered', color: '#ffffff' },
+  { key: 'CLOSED', label: 'Closed', color: 'rgba(255,255,255,0.4)' },
 ];
 
 const EVENT_ICONS = {
@@ -29,24 +29,24 @@ const EVENT_ICONS = {
 };
 
 const EVENT_COLORS = {
-  LEGAL_NOTICE_SENT: '#F59E0B',
-  NEGOTIATION_STARTED: '#3B82F6',
-  SETTLEMENT_RECORDED: '#7C5CFC',
-  PARTIAL_RECOVERY: '#22C55E',
-  FULL_RECOVERY: '#22C55E',
-  CASE_CLOSED: '#6B7280',
-  DOCUMENT_UPLOADED: '#3B82F6',
-  NOTE_ADDED: '#A0A0A8',
+  LEGAL_NOTICE_SENT: '#e0e0e0',
+  NEGOTIATION_STARTED: '#cccccc',
+  SETTLEMENT_RECORDED: '#aaaaaa',
+  PARTIAL_RECOVERY: '#ffffff',
+  FULL_RECOVERY: '#ffffff',
+  CASE_CLOSED: 'rgba(255,255,255,0.4)',
+  DOCUMENT_UPLOADED: '#e0e0e0',
+  NOTE_ADDED: 'rgba(255,255,255,0.6)',
 };
 
 /* ── Action Buttons Config ────────────────────────── */
 const ACTIONS = [
-  { event_type: 'LEGAL_NOTICE_SENT', label: 'Send Legal Notice', icon: Send, color: '#F59E0B', needsNote: true },
-  { event_type: 'NEGOTIATION_STARTED', label: 'Start Negotiation', icon: MessageSquare, color: '#3B82F6', needsNote: true },
-  { event_type: 'SETTLEMENT_RECORDED', label: 'Record Settlement', icon: Handshake, color: '#7C5CFC', needsNote: true },
-  { event_type: 'PARTIAL_RECOVERY', label: 'Partial Recovery', icon: DollarSign, color: '#22C55E', needsNote: true },
-  { event_type: 'FULL_RECOVERY', label: 'Full Recovery', icon: CheckCircle2, color: '#22C55E', needsNote: true },
-  { event_type: 'CASE_CLOSED', label: 'Close Case', icon: XCircle, color: '#6B7280', needsNote: true },
+  { event_type: 'LEGAL_NOTICE_SENT', label: 'Send Legal Notice', icon: Send, color: '#ffffff', needsNote: true },
+  { event_type: 'NEGOTIATION_STARTED', label: 'Start Negotiation', icon: MessageSquare, color: '#ffffff', needsNote: true },
+  { event_type: 'SETTLEMENT_RECORDED', label: 'Record Settlement', icon: Handshake, color: '#ffffff', needsNote: true },
+  { event_type: 'PARTIAL_RECOVERY', label: 'Partial Recovery', icon: DollarSign, color: '#ffffff', needsNote: true },
+  { event_type: 'FULL_RECOVERY', label: 'Full Recovery', icon: CheckCircle2, color: '#ffffff', needsNote: true },
+  { event_type: 'CASE_CLOSED', label: 'Close Case', icon: XCircle, color: 'rgba(255,255,255,0.6)', needsNote: true },
 ];
 
 export default function CaseDetailPage() {
@@ -205,7 +205,7 @@ export default function CaseDetailPage() {
         <div>
           {/* Case Info */}
           <div className="cd-section">
-            <div className="cd-section-title"><FileText size={16} color="#7C5CFC" /> Case Information</div>
+            <div className="cd-section-title"><FileText size={16} color="#ffffff" /> Case Information</div>
             <div className="cd-info-grid">
               <div className="cd-info-item">
                 <div className="cd-info-label">Pool / Invoice</div>
@@ -213,7 +213,7 @@ export default function CaseDetailPage() {
               </div>
               <div className="cd-info-item">
                 <div className="cd-info-label">Outstanding Amount</div>
-                <div className="cd-info-value" style={{ color: '#F59E0B' }}>{Number(caseData.outstanding_amount).toFixed(4)} MATIC</div>
+                <div className="cd-info-value" style={{ color: '#ffffff' }}>{Number(caseData.outstanding_amount).toFixed(4)} MATIC</div>
               </div>
               <div className="cd-info-item">
                 <div className="cd-info-label">Exporter</div>
@@ -318,7 +318,7 @@ export default function CaseDetailPage() {
         <div>
           {/* Actions */}
           <div className="cd-section">
-            <div className="cd-section-title"><Send size={16} color="#22C55E" /> Actions</div>
+            <div className="cd-section-title"><Send size={16} color="#ffffff" /> Actions</div>
             <div className="cd-actions">
               {ACTIONS.map(action => (
                 <button

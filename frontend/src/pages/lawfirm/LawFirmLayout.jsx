@@ -21,7 +21,7 @@ export default function LawFirmLayout() {
         <AppHeader
           navItems={NAV_ITEMS}
           portalName="Law Firm Portal"
-          accentColor="#bbf7d0"
+          accentColor="#ffffff"
         />
       }
     >

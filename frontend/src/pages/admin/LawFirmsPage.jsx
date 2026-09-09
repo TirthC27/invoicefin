@@ -16,8 +16,8 @@ function Modal({ open, onClose, children }) {
 function FirmStatusBadge({ status }) {
   const isActive = status === 'ACTIVE';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 50, fontSize: 12, fontWeight: 600, background: isActive ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.08)', color: isActive ? '#16a34a' : '#dc2626', border: `1px solid ${isActive ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? '#16a34a' : '#dc2626' }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 50, fontSize: 12, fontWeight: 600, background: isActive ? 'rgba(0,0,0,0.06)' : 'rgba(239,68,68,0.08)', color: isActive ? '#111111' : '#dc2626', border: `1px solid ${isActive ? 'rgba(0,0,0,0.12)' : 'rgba(239,68,68,0.2)'}` }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? '#111111' : '#dc2626' }} />
       {status}
     </span>
   );
@@ -152,22 +152,22 @@ export default function LawFirmsPage() {
       {/* Created Credentials Modal */}
       <Modal open={showCreated} onClose={() => setShowCreated(false)}>
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-lg)', background: 'rgba(34,197,94,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <Check size={28} color="#16a34a" />
+          <div style={{ width: 56, height: 56, borderRadius: 'var(--radius-lg)', background: 'rgba(0,0,0,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Check size={28} color="#111111" />
           </div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Partner Created!</h2>
           <p style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Share these credentials securely with {createdData?.firmName}</p>
         </div>
-        <div style={{ background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 16 }}>
+        <div style={{ background: 'rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 'var(--radius-md)', padding: 16, marginBottom: 16 }}>
           {[{ label: 'Email', value: createdData?.email }, { label: 'Temporary Password', value: createdData?.password, copy: true }].map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: item.copy ? 'none' : '1px solid rgba(34,197,94,0.1)' }}>
+            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: item.copy ? 'none' : '1px solid rgba(0,0,0,0.06)' }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginBottom: 2 }}>{item.label}</div>
                 <div style={{ fontSize: 14, fontWeight: 600, fontFamily: 'monospace' }}>{item.value}</div>
               </div>
               {item.copy && (
                 <button onClick={() => copyToClipboard(createdData?.password || '')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34,197,94,0.2)', background: 'transparent', color: '#16a34a', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,0,0,0.12)', background: 'transparent', color: '#111111', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
                   {copied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}
                 </button>
               )}
