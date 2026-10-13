@@ -105,14 +105,6 @@ export default function InvoicesPage() {
     load({ page: p });
   };
 
-  const thStyle = (field) => ({
-    padding: '10px 14px', textAlign: 'left',
-    fontWeight: 600, fontSize: 11.5, color: '#A0A0A8',
-    textTransform: 'uppercase', letterSpacing: '.5px',
-    cursor: field ? 'pointer' : 'default', userSelect: 'none',
-    whiteSpace: 'nowrap',
-  });
-
   return (
     <div>
       <style>{`
@@ -141,17 +133,18 @@ export default function InvoicesPage() {
         .inv-action-link {
           transition: color 0.14s, opacity 0.14s, transform 0.16s cubic-bezier(0.34,1.56,0.64,1);
           display: inline-flex; align-items: center; gap: 3px;
+          color: #111111 !important;
         }
-        .inv-action-link:hover { opacity: 0.75; transform: translateX(2px); }
+        .inv-action-link:hover { color: #000000 !important; opacity: 0.7; transform: translateX(2px); }
         .inv-pool-btn {
           display: inline-flex; align-items: center; gap: 4px;
-          background: rgba(255,255,255,.08); color: #ffffff;
-          border: 1px solid rgba(255,255,255,.2); border-radius: 8px;
+          background: #111111; color: #ffffff;
+          border: 1px solid #111111; border-radius: 8px;
           padding: 4px 11px; text-decoration: none;
           font-size: 12px; font-weight: 700;
           transition: background 0.16s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.16s;
         }
-        .inv-pool-btn:hover { background: rgba(255,255,255,.16); transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.3); }
+        .inv-pool-btn:hover { background: #2a2a2a; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.2); }
         .inv-pool-btn:active { transform: scale(0.96); }
         .inv-pg-btn {
           transition: background 0.14s, border-color 0.14s, color 0.14s, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
@@ -286,7 +279,7 @@ export default function InvoicesPage() {
                         )}
                         <Link to={`/exporter/invoices/${inv.id}`}
                           className="inv-action-link"
-                          style={{ color: 'var(--color-accent-fg)', textDecoration: 'none', fontWeight: 600, fontSize: 12.5 }}>
+                          style={{ color: '#111111', textDecoration: 'none', fontWeight: 600, fontSize: 12.5 }}>
                           View <ChevronRight size={13} />
                         </Link>
                       </div>

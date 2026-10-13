@@ -1,43 +1,43 @@
 /* ── Google Fonts ─────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ── Design Tokens (Full Dark Monochrome) ──── */
+/* ── Design Tokens (Warm Light Theme) ──── */
 :root {
-  /* Backgrounds — White majority theme */
-  --bg-base: #fafafa;
+  /* Backgrounds — warm neutral base */
+  --bg-base: #f6f1eb;
   --bg-card: #ffffff;
-  --bg-muted: rgba(0, 0, 0, 0.04);
+  --bg-muted: rgba(72, 57, 48, 0.05);
 
-  /* Borders — soft light-gray border */
-  --border: rgba(0, 0, 0, 0.08);
-  --border-strong: rgba(0, 0, 0, 0.16);
+  /* Borders — soft warm gray */
+  --border: rgba(62, 45, 34, 0.12);
+  --border-strong: rgba(62, 45, 34, 0.18);
 
-  /* Foregrounds — near-black typography and muted dark gray */
-  --fg-primary: #111111;
-  --fg-secondary: rgba(0, 0, 0, 0.7);
-  --fg-muted: rgba(0, 0, 0, 0.52);
+  /* Foregrounds — deep warm charcoal */
+  --fg-primary: #1d1a18;
+  --fg-secondary: rgba(29, 26, 24, 0.74);
+  --fg-muted: rgba(29, 26, 24, 0.56);
 
-  /* Accent — monochrome black */
-  --color-accent: #111111;
-  --color-accent-strong: #1a1a1f;
+  /* Accent — dark neutral */
+  --color-accent: #1d1a18;
+  --color-accent-strong: #2b2723;
   --color-accent-fg: #ffffff;
 
-  /* Positive / Negative — monochrome black / subtle alert */
-  --color-positive: #111111;
+  /* Positive / Negative — neutral accents */
+  --color-positive: #1d1a18;
   --color-negative: #dc2626;
 
-  /* Chart & Portal accents - grayscale dark */
-  --color-chart-gray: #666666;
-  --color-chart-orange: #111111;
-  --color-chart-blue: #333333;
-  --color-chart-green: #111111;
-  --color-chart-purple: #444444;
-  --color-chart-amber: #666666;
+  /* Chart & Portal accents - soft neutral palette */
+  --color-chart-gray: #8d827a;
+  --color-chart-orange: #d9bca8;
+  --color-chart-blue: #a7b1d8;
+  --color-chart-green: #bfd1c5;
+  --color-chart-purple: #d5c3d8;
+  --color-chart-amber: #e8d7a5;
 
-  --color-investor: #111111;
-  --color-admin: #111111;
-  --color-lawfirm: #111111;
-  --color-exporter: #111111;
+  --color-investor: #1d1a18;
+  --color-admin: #1d1a18;
+  --color-lawfirm: #1d1a18;
+  --color-exporter: #1d1a18;
 
   /* Radius */
   --radius-sm: 6px;
@@ -45,10 +45,10 @@
   --radius-lg: 14px;
   --radius-xl: 20px;
 
-  /* Shadows - enhanced elevation for card visibility */
-  --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 18px 34px rgba(0, 0, 0, 0.16), 0 4px 10px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 24px 44px rgba(0, 0, 0, 0.22), 0 6px 14px rgba(0, 0, 0, 0.12);
+  /* Shadows - softer elevation */
+  --shadow-sm: 0 4px 12px rgba(32, 26, 21, 0.06);
+  --shadow-md: 0 12px 28px rgba(32, 26, 21, 0.12), 0 4px 10px rgba(32, 26, 21, 0.05);
+  --shadow-lg: 0 18px 36px rgba(32, 26, 21, 0.14), 0 6px 14px rgba(32, 26, 21, 0.08);
 }
 
 /* ── Reset & Base ────────────────────────────────────── */
@@ -65,7 +65,7 @@ html {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--bg-base);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {

@@ -8,11 +8,11 @@
  *  - Activity history feed
  */
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { Link, useParams, useLocation } from 'react-router-dom';
 import {
   ShieldCheck, Copy, CheckCircle2, Clock, DollarSign,
   Calendar, Building2, FileText, Hash, Globe,
-  Activity, TrendingUp, Plus, AlertCircle,
+  Activity, TrendingUp, Plus, AlertCircle, ArrowLeft,
 } from 'lucide-react';
 import { exporterApi } from '../../lib/api';
 import { useCountdown, fmtAmount, timeAgo } from './exporterUtils';

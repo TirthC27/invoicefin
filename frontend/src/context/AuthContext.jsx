@@ -208,10 +208,11 @@ export function AuthProvider({ children }) {
 /**
  * ProtectedRoute — wraps a page component.
  * Redirects to /login if not authenticated.
- * Optionally restricts by role(s).
+ * Authentication is required, but role-based access restrictions are
+ * temporarily disabled.
  */
-export function ProtectedRoute({ children, allowedRoles }) {
-  const { isAuthenticated, user, loading, backendAuthError } = useAuth();
+export function ProtectedRoute({ children }) {
+  const { isAuthenticated, loading, backendAuthError } = useAuth();
 
   if (loading) {
     return (
@@ -235,30 +236,6 @@ export function ProtectedRoute({ children, allowedRoles }) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={backendAuthError ? { authError: backendAuthError } : undefined} />;
-  }
-
-  if (allowedRoles && user) {
-    let hasAccess = allowedRoles.includes(user.role);
-    
-    if (allowedRoles.includes('EXPORTER') && user.can_export) {
-      hasAccess = true;
-    }
-
-    if (!hasAccess) {
-      return (
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          minHeight: '100vh', background: '#fafafa', color: '#111111',
-          fontFamily: 'Inter, sans-serif', flexDirection: 'column', gap: 12,
-        }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Access Denied</h1>
-          <p style={{ color: 'rgba(0,0,0,0.55)' }}>You don't have permission to access this page.</p>
-          <a href="/login" style={{ color: '#111111', textDecoration: 'underline' }}>
-            Return to Login
-          </a>
-        </div>
-      );
-    }
   }
 
   return children;

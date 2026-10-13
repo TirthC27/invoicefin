@@ -60,28 +60,28 @@ function App() {
 
         {/* ── Investor portal ── */}
         <Route path="/investor/*" element={
-          <ProtectedRoute allowedRoles={['INVESTOR']}>
+          <ProtectedRoute>
             <InvestorLayout />
           </ProtectedRoute>
         } />
 
         {/* ── Admin portal ── */}
         <Route path="/admin/*" element={
-          <ProtectedRoute allowedRoles={['ADMIN']}>
+          <ProtectedRoute>
             <AdminLayout />
           </ProtectedRoute>
         } />
 
         {/* ── Law Firm portal ── */}
         <Route path="/lawfirm/*" element={
-          <ProtectedRoute allowedRoles={['LAW_FIRM']}>
+          <ProtectedRoute>
             <LawFirmLayout />
           </ProtectedRoute>
         } />
 
         {/* ── Exporter portal ── */}
         <Route path="/exporter/*" element={
-          <ProtectedRoute allowedRoles={['EXPORTER']}>
+          <ProtectedRoute>
             <ExporterLayout />
           </ProtectedRoute>
         } />

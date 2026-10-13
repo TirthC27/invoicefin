@@ -510,14 +510,15 @@ def _update_portfolio(user_id, wallet_address=''):
     """Recalculate and cache portfolio aggregates."""
     all_investments = Investment.objects.filter(user_id=user_id).exclude(status__in=['pending', 'failed'])
 
-    # Active investments
-    active = all_investments.filter(status__in=['confirmed', 'active'])
+    # Active investments (includes confirmed, active, overdue, defaulted)
+    active = all_investments.exclude(status='completed')
     active_count = active.count()
-    total_invested = sum(inv.amount for inv in active)
+    active_total_invested = sum(inv.amount for inv in active)
 
     # Completed investments
     completed = all_investments.filter(status='completed')
     completed_count = completed.count()
+    completed_total_invested = sum(inv.amount for inv in completed)
     total_profit = sum(inv.expected_profit for inv in completed)
 
     # Returns from settled pools (legacy logic kept for backward compat)
@@ -532,13 +533,16 @@ def _update_portfolio(user_id, wallet_address=''):
     pending_returns = sum(inv.expected_profit for inv in active)
 
     # Current value = invested amounts + accrued returns from completed
-    current_value = total_invested + total_profit
+    current_value = active_total_invested + total_profit
+
+    # Total Invested = all principal invested ever
+    total_invested = active_total_invested + completed_total_invested
 
     portfolio, _ = Portfolio.objects.update_or_create(
         user_id=user_id,
         defaults={
             'wallet_address': wallet_address,
-            'total_invested': total_invested + sum(inv.amount for inv in completed),
+            'total_invested': total_invested,
             'active_investments': active_count,
             'total_returns': returns,
             'current_value': current_value,
